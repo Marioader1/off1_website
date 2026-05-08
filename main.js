@@ -1,0 +1,494 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // 🌐 Configuration: Change this to your ngrok URL for external testing
+    // Example: const API_BASE_URL = 'https://your-ngrok-url.ngrok-free.app';
+    const API_BASE_URL = 'https://miasmatical-kellie-quartan.ngrok-free.dev';
+
+    // Auth Check
+    const token = localStorage.getItem('off1_token');
+    const currentUser = localStorage.getItem('off1_username');
+    if (!token || !currentUser) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const chatForm = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+    const chatHistory = document.getElementById('chat-history');
+
+    // Modals & Buttons
+    const btnAdmin = document.getElementById('btn-admin');
+    const adminModal = document.getElementById('admin-modal');
+    const closeAdminBtn = document.getElementById('close-admin-btn');
+    
+    const btnSettings = document.getElementById('btn-settings');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    const settingsForm = document.getElementById('settings-form');
+    
+    const btnHistory = document.getElementById('btn-history');
+    const historyModal = document.getElementById('history-modal');
+    const closeHistoryBtn = document.getElementById('close-history-btn');
+    const historySessionList = document.getElementById('history-session-list');
+
+    // Display username in UI if possible (optional)
+    console.log(`Logged in as: ${currentUser}`);
+
+    // Logout functionality
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('off1_token');
+            localStorage.removeItem('off1_username');
+            localStorage.removeItem('off1_is_admin');
+            window.location.href = 'login.html';
+        });
+    }
+
+    // Focus input on load
+    userInput.focus();
+
+    // Mobile Sidebar Toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.querySelector('.sidebar');
+    if (mobileMenuBtn && sidebar) {
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 && 
+                sidebar.classList.contains('open') && 
+                !sidebar.contains(e.target) && 
+                !mobileMenuBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+    }
+
+    chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        // 1. Add user message to UI
+        appendMessage('user', message);
+        
+        // Clear input
+        userInput.value = '';
+
+        // 2. Fetch real AI response
+        fetchAIResponse(message);
+    });
+
+    function appendMessage(sender, text) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+        
+        if (sender === 'user') {
+            messageDiv.classList.add('user-message');
+            messageDiv.innerHTML = `
+                <div class="avatar">U</div>
+                <div class="content">${escapeHTML(text)}</div>
+            `;
+        } else {
+            messageDiv.classList.add('ai-message');
+            messageDiv.innerHTML = `
+                <div class="avatar">O</div>
+                <div class="content">${escapeHTML(text)}</div>
+            `;
+        }
+
+        chatHistory.appendChild(messageDiv);
+        scrollToBottom();
+    }
+
+    async function fetchAIResponse(userMessage) {
+        // Show a temporary loading indicator
+        const loadingId = 'loading-' + Date.now();
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', 'ai-message');
+        messageDiv.id = loadingId;
+        messageDiv.innerHTML = `
+            <div class="avatar">O</div>
+            <div class="content glow-text">Thinking...</div>
+        `;
+        chatHistory.appendChild(messageDiv);
+        scrollToBottom();
+
+        // 180 second timeout for fetch (giving AI more time to think)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 180000);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify({
+                    text: userMessage,
+                    user_name: currentUser,
+                    language: "English"
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            const data = await response.json();
+            
+            // Remove loading indicator
+            document.getElementById(loadingId).remove();
+            
+            // Add real response
+            appendMessage('ai', data.response);
+        } catch (error) {
+            clearTimeout(timeoutId);
+            console.error("Error communicating with server:", error);
+            document.getElementById(loadingId).remove();
+            if (error.name === 'AbortError') {
+                appendMessage('ai', "❌ The request timed out. The server might be slow or offline.");
+            } else {
+                appendMessage('ai', "❌ Failed to connect to the server. Please ensure the backend is running on port 5000.");
+            }
+        }
+    }
+
+    function scrollToBottom() {
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag)
+        );
+    }
+
+    // --- Ad Consent Logic (Session-based) ---
+    const adModal = document.getElementById('ad-modal-overlay');
+    const btnAccept = document.getElementById('ad-accept');
+    const btnDecline = document.getElementById('ad-decline');
+
+    // Interstitial Ad Elements
+    const interstitialAd = document.getElementById('interstitial-ad');
+    const adTimer = document.getElementById('ad-timer');
+    const closeAdBtn = document.getElementById('close-ad-btn');
+
+    function showInterstitialAd() {
+        interstitialAd.classList.remove('hidden');
+        closeAdBtn.classList.add('hidden');
+        
+        let timeLeft = 5;
+        adTimer.textContent = `Ad finishes in ${timeLeft}s`;
+        
+        const interval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft > 0) {
+                adTimer.textContent = `Ad finishes in ${timeLeft}s`;
+            } else {
+                clearInterval(interval);
+                adTimer.textContent = "Ad Finished";
+                closeAdBtn.classList.remove('hidden');
+            }
+        }, 1000);
+        
+        closeAdBtn.onclick = () => {
+            interstitialAd.classList.add('hidden');
+        };
+    }
+
+    if (adModal && btnAccept && btnDecline && interstitialAd) {
+        const modalContent = adModal.querySelector('.modal-content');
+
+        function showMessageAndDismiss(messageHTML) {
+            modalContent.innerHTML = messageHTML;
+            setTimeout(() => {
+                adModal.classList.add('hidden');
+            }, 3000);
+        }
+
+        function checkAdBlockerAndHandle() {
+            const adBait = document.createElement('div');
+            adBait.className = 'adsbox ad-banner ad-container ad-slot';
+            adBait.style.height = '10px';
+            adBait.style.width = '10px';
+            adBait.style.position = 'absolute';
+            adBait.style.top = '-1000px';
+            adBait.style.left = '-1000px';
+            document.body.appendChild(adBait);
+            
+            setTimeout(() => {
+                const isBlocked = adBait.offsetHeight === 0 || window.getComputedStyle(adBait).display === 'none';
+                adBait.remove();
+                
+                if (isBlocked) {
+                    sessionStorage.setItem('ad_consent_asked', 'true');
+                    sessionStorage.setItem('ad_consent', 'false');
+                    adModal.classList.remove('hidden');
+                    showMessageAndDismiss(`
+                        <h2 class="glow-text">Ad Blocker Detected</h2>
+                        <p style="margin-top: 1rem;">Oh it looks like ad blocker is on don't worry use the internet as you please</p>
+                    `);
+                } else {
+                    adModal.classList.remove('hidden');
+                }
+            }, 100);
+        }
+
+        if (!sessionStorage.getItem('ad_consent_asked')) {
+            checkAdBlockerAndHandle();
+        }
+
+        btnAccept.addEventListener('click', () => {
+            sessionStorage.setItem('ad_consent_asked', 'true');
+            sessionStorage.setItem('ad_consent', 'true');
+            adModal.classList.add('hidden');
+            
+            setTimeout(() => {
+                showInterstitialAd();
+            }, 500);
+        });
+
+        btnDecline.addEventListener('click', () => {
+            sessionStorage.setItem('ad_consent_asked', 'true');
+            sessionStorage.setItem('ad_consent', 'false');
+            
+            showMessageAndDismiss(`
+                <h2 class="glow-text">No Problem!</h2>
+                <p style="margin-top: 1rem; font-size: 1.1rem;">That's ok I hope you have a good day</p>
+            `);
+        });
+    }
+
+    const btnSupport = document.getElementById('btn-support');
+    if (btnSupport && interstitialAd) {
+        btnSupport.addEventListener('click', () => {
+            showInterstitialAd();
+        });
+    }
+
+    // --- Admin Panel Logic ---
+    const isAdmin = localStorage.getItem('off1_is_admin') === 'true';
+    if (isAdmin && btnAdmin) {
+        btnAdmin.classList.remove('d-none');
+        btnAdmin.classList.remove('hidden');
+
+        btnAdmin.addEventListener('click', async () => {
+            adminModal.classList.remove('hidden');
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/dashboard`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                const stats = await res.json();
+                document.getElementById('stat-uptime').textContent = stats.uptime;
+                document.getElementById('stat-requests').textContent = stats.requests;
+                document.getElementById('stat-cpu').textContent = stats.cpu + '%';
+                document.getElementById('stat-ram').textContent = stats.ram + '%';
+            } catch (e) {
+                console.error(e);
+            }
+        });
+
+        closeAdminBtn.addEventListener('click', () => {
+            adminModal.classList.add('hidden');
+        });
+
+        const runSpeedtestBtn = document.getElementById('run-speedtest-btn');
+        const stStatus = document.getElementById('speedtest-status');
+        const stResults = document.getElementById('speedtest-results');
+        if (runSpeedtestBtn) {
+            runSpeedtestBtn.addEventListener('click', async () => {
+                runSpeedtestBtn.disabled = true;
+                runSpeedtestBtn.textContent = 'Testing...';
+                stStatus.textContent = 'Running test (takes ~15s)...';
+                stStatus.style.color = 'var(--primary-color)';
+                stResults.classList.add('hidden');
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/speedtest`, {
+                        headers: { 'ngrok-skip-browser-warning': 'true' }
+                    });
+                    const data = await res.json();
+                    
+                    if (data.status === 'success') {
+                        document.getElementById('st-ping').textContent = `${data.ping} ms`;
+                        document.getElementById('st-dl').textContent = `${data.download} Mbps`;
+                        document.getElementById('st-ul').textContent = `${data.upload} Mbps`;
+                        stResults.classList.remove('hidden');
+                        stStatus.textContent = 'Test complete!';
+                        stStatus.style.color = '#10b981';
+                    } else {
+                        stStatus.textContent = `Error: ${data.message}`;
+                        stStatus.style.color = '#ef4444';
+                    }
+                } catch (e) {
+                    console.error(e);
+                    stStatus.textContent = 'Failed to reach server.';
+                    stStatus.style.color = '#ef4444';
+                } finally {
+                    runSpeedtestBtn.disabled = false;
+                    runSpeedtestBtn.textContent = 'Run Test';
+                }
+            });
+        }
+    }
+
+    // --- Settings Logic ---
+    if (btnSettings && settingsModal) {
+        btnSettings.addEventListener('click', async () => {
+            settingsModal.classList.remove('hidden');
+            // Fetch current settings
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/settings?user_name=${currentUser}`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                const data = await res.json();
+                document.getElementById('setting-ai-name').value = data.ai_name || 'Off1';
+                document.getElementById('setting-language').value = data.language || 'English';
+            } catch (e) {
+                console.error(e);
+            }
+        });
+
+        closeSettingsBtn.addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
+        });
+
+        settingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const ai_name = document.getElementById('setting-ai-name').value;
+            const language = document.getElementById('setting-language').value;
+            
+            try {
+                await fetch(`${API_BASE_URL}/api/settings`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    body: JSON.stringify({ user_name: currentUser, ai_name, language })
+                });
+                settingsModal.classList.add('hidden');
+                // Could notify user
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    }
+
+    // --- History Logic ---
+    // --- History Logic ---
+    let fullHistoryData = [];
+
+    async function fetchAllHistory() {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/history?user_name=${currentUser}`, {
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            });
+            const data = await res.json();
+            if (data.history) {
+                fullHistoryData = data.history;
+            }
+        } catch (e) {
+            console.error("Failed to load history", e);
+        }
+    }
+
+    function groupHistoryByDate() {
+        const groups = {};
+        fullHistoryData.forEach(msg => {
+            let dateStr = "Older Messages";
+            if (msg.timestamp) {
+                dateStr = new Date(msg.timestamp).toLocaleDateString();
+            } else if (typeof msg === 'string') {
+                dateStr = "Legacy Chats";
+            }
+            
+            if (!groups[dateStr]) groups[dateStr] = [];
+            groups[dateStr].push(msg);
+        });
+        return groups;
+    }
+
+    function renderHistoryModal() {
+        if (!historySessionList) return;
+        historySessionList.innerHTML = '';
+        const groups = groupHistoryByDate();
+        
+        const dates = Object.keys(groups).sort((a, b) => {
+            if (a.includes("Legacy") || a.includes("Older")) return 1;
+            if (b.includes("Legacy") || b.includes("Older")) return -1;
+            return new Date(b) - new Date(a);
+        });
+
+        if (dates.length === 0) {
+            historySessionList.innerHTML = '<p style="color: gray; text-align: center;">No chat history found.</p>';
+            return;
+        }
+
+        dates.forEach(date => {
+            const msgs = groups[date];
+            const btn = document.createElement('button');
+            btn.className = 'session-btn';
+            
+            let displayDate = date;
+            if (date === new Date().toLocaleDateString()) displayDate = 'Today';
+            else if (date === new Date(Date.now() - 86400000).toLocaleDateString()) displayDate = 'Yesterday';
+
+            btn.innerHTML = `
+                <span class="session-date">${displayDate}</span>
+                <span class="session-count">${msgs.length} msgs</span>
+            `;
+            btn.onclick = () => {
+                renderSpecificSession(msgs);
+                historyModal.classList.add('hidden');
+            };
+            historySessionList.appendChild(btn);
+        });
+    }
+
+    function renderSpecificSession(messages) {
+        chatHistory.innerHTML = ''; 
+        messages.forEach(msg => {
+            if (typeof msg === 'string') {
+                const split = msg.split(': ');
+                if (split.length >= 2) {
+                    appendMessage(split[0], split.slice(1).join(': '));
+                }
+            } else {
+                appendMessage(msg.sender, msg.text);
+            }
+        });
+    }
+
+    // Load history automatically on start (load today's chat if it exists)
+    (async function initHistory() {
+        await fetchAllHistory();
+        const groups = groupHistoryByDate();
+        const todayStr = new Date().toLocaleDateString();
+        if (groups[todayStr]) {
+            renderSpecificSession(groups[todayStr]);
+        }
+    })();
+
+    if (btnHistory && historyModal) {
+        btnHistory.addEventListener('click', async () => {
+            await fetchAllHistory();
+            renderHistoryModal();
+            historyModal.classList.remove('hidden');
+        });
+
+        closeHistoryBtn.addEventListener('click', () => {
+            historyModal.classList.add('hidden');
+        });
+    }
+
+});

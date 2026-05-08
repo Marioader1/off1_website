@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Off1</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body class="login-body">
+    <div class="login-card glass-panel">
+        <h1 class="logo glow-text">Off1</h1>
+        <p class="subtitle" id="form-subtitle">Welcome back, system online.</p>
+
+        <form id="login-form">
+            <div class="login-input-group">
+                <div>
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="login-input" placeholder="Enter username" required autocomplete="username">
+                </div>
+                <div>
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="login-input" placeholder="Enter password" required autocomplete="current-password">
+                </div>
+            </div>
+
+            <div id="error-message" class="text-danger d-none" style="margin-top: 1rem; font-size: 0.85rem;"></div>
+
+            <button type="submit" id="submit-btn" class="btn btn-primary w-100" style="margin-top: 2rem;">Login</button>
+        </form>
+
+        <p class="login-toggle">
+            <span id="toggle-text">Don't have an account? </span>
+            <span id="toggle-link">Register</span>
+        </p>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>
