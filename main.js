@@ -348,24 +348,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Client Speed Test Logic ---
         if (runClientTestBtn) {
             runClientTestBtn.addEventListener('click', async () => {
+                const proceed = confirm("⚠️ Data Usage Warning: This speed test will download about 30MB of data to get a stable reading. Do you want to continue?");
+                if (!proceed) return;
+
                 runClientTestBtn.disabled = true;
                 runClientTestBtn.textContent = 'Testing...';
-                clientTestStatus.textContent = 'Measuring latency & download...';
+                clientTestStatus.textContent = 'Measuring your internet speed (30MB test)...';
                 clientTestResults.classList.add('hidden');
 
                 try {
-                    // 1. Measure Latency (Ping)
+                    // 1. Measure Latency (to a fast global server)
                     const startPing = performance.now();
-                    await fetch(`${API_BASE_URL}/`, { mode: 'no-cors', headers: {'ngrok-skip-browser-warning': 'true'} });
+                    await fetch('https://1.1.1.1/cdn-cgi/trace', { mode: 'no-cors' });
                     const endPing = performance.now();
                     const latency = Math.round(endPing - startPing);
                     document.getElementById('ct-ping').textContent = `${latency} ms`;
 
-                    // 2. Measure Download Speed
+                    // 2. Measure Download Speed (from a fast CDN)
+                    // Using a 30MB file from Cloudflare's speed test infrastructure
+                    const testFileUrl = 'https://speed.cloudflare.com/__down?bytes=31457280';
                     const startDl = performance.now();
-                    const response = await fetch(`${API_BASE_URL}/api/speedtest/dummy`, { 
-                        headers: {'ngrok-skip-browser-warning': 'true'} 
-                    });
+                    const response = await fetch(testFileUrl);
                     const blob = await response.blob();
                     const endDl = performance.now();
                     
@@ -375,12 +378,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     document.getElementById('ct-dl').textContent = `${speedMbps.toFixed(2)} Mbps`;
                     clientTestResults.classList.remove('hidden');
-                    clientTestStatus.textContent = 'Client test complete!';
+                    clientTestStatus.textContent = 'Internet test complete!';
                     clientTestStatus.style.color = '#10b981';
 
                 } catch (e) {
                     console.error(e);
-                    clientTestStatus.textContent = 'Test failed. Check connection.';
+                    clientTestStatus.textContent = 'Test failed. Check your connection.';
                     clientTestStatus.style.color = '#ef4444';
                 } finally {
                     runClientTestBtn.disabled = false;
