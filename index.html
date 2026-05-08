@@ -139,6 +139,25 @@
                 </div>
             </div>
 
+            <!-- Client Speed Test Section -->
+            <div style="margin-top: 1rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; border: 1px solid var(--glass-border);">
+                <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-primary);">Client Speed Test</h3>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button id="run-client-test-btn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Test My Speed</button>
+                    <span id="client-test-status" style="font-size: 0.85rem; color: var(--text-secondary);">Ready</span>
+                </div>
+                <div id="client-test-results" class="hidden" style="margin-top: 1rem; display: flex; gap: 1rem; text-align: center;">
+                    <div style="flex: 1;">
+                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Latency</span>
+                        <div id="ct-ping" style="font-weight: 600; color: #10b981;">-- ms</div>
+                    </div>
+                    <div style="flex: 1; border-left: 1px solid var(--glass-border);">
+                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Download</span>
+                        <div id="ct-dl" style="font-weight: 600; color: var(--primary-color);">-- Mbps</div>
+                    </div>
+                </div>
+            </div>
+
             <div style="margin-top: 2rem; display: flex; gap: 1rem;">
                 <button id="close-admin-btn" class="btn btn-secondary" style="width: 100%;">Close Panel</button>
             </div>

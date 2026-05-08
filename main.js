@@ -30,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeHistoryBtn = document.getElementById('close-history-btn');
     const historySessionList = document.getElementById('history-session-list');
 
+    // Client Speed Test
+    const runClientTestBtn = document.getElementById('run-client-test-btn');
+    const clientTestStatus = document.getElementById('client-test-status');
+    const clientTestResults = document.getElementById('client-test-results');
+
     // Display username in UI if possible (optional)
     console.log(`Logged in as: ${currentUser}`);
 
@@ -336,6 +341,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 } finally {
                     runSpeedtestBtn.disabled = false;
                     runSpeedtestBtn.textContent = 'Run Test';
+                }
+            });
+        }
+
+        // --- Client Speed Test Logic ---
+        if (runClientTestBtn) {
+            runClientTestBtn.addEventListener('click', async () => {
+                runClientTestBtn.disabled = true;
+                runClientTestBtn.textContent = 'Testing...';
+                clientTestStatus.textContent = 'Measuring latency & download...';
+                clientTestResults.classList.add('hidden');
+
+                try {
+                    // 1. Measure Latency (Ping)
+                    const startPing = performance.now();
+                    await fetch(`${API_BASE_URL}/`, { mode: 'no-cors', headers: {'ngrok-skip-browser-warning': 'true'} });
+                    const endPing = performance.now();
+                    const latency = Math.round(endPing - startPing);
+                    document.getElementById('ct-ping').textContent = `${latency} ms`;
+
+                    // 2. Measure Download Speed
+                    const startDl = performance.now();
+                    const response = await fetch(`${API_BASE_URL}/api/speedtest/dummy`, { 
+                        headers: {'ngrok-skip-browser-warning': 'true'} 
+                    });
+                    const blob = await response.blob();
+                    const endDl = performance.now();
+                    
+                    const durationInSeconds = (endDl - startDl) / 1000;
+                    const sizeInBits = blob.size * 8;
+                    const speedMbps = (sizeInBits / durationInSeconds) / (1024 * 1024);
+
+                    document.getElementById('ct-dl').textContent = `${speedMbps.toFixed(2)} Mbps`;
+                    clientTestResults.classList.remove('hidden');
+                    clientTestStatus.textContent = 'Client test complete!';
+                    clientTestStatus.style.color = '#10b981';
+
+                } catch (e) {
+                    console.error(e);
+                    clientTestStatus.textContent = 'Test failed. Check connection.';
+                    clientTestStatus.style.color = '#ef4444';
+                } finally {
+                    runClientTestBtn.disabled = false;
+                    runClientTestBtn.textContent = 'Test My Speed';
                 }
             });
         }
