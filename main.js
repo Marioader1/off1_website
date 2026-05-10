@@ -156,6 +156,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Desktop Sidebar Toggle
+    const desktopToggleBtn = document.getElementById('sidebar-toggle-desktop');
+    if (desktopToggleBtn && sidebar) {
+        desktopToggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            // Save state
+            localStorage.setItem('off1_sidebar_collapsed', sidebar.classList.contains('collapsed'));
+        });
+
+        // Restore state
+        if (localStorage.getItem('off1_sidebar_collapsed') === 'true' && window.innerWidth > 768) {
+            sidebar.classList.add('collapsed');
+        }
+    }
+
     chatForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
