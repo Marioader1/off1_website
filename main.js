@@ -38,14 +38,17 @@ document.addEventListener('DOMContentLoaded', () => {
     syncUserRole(); // Run silently in background
 
     // Update Notification Logic
-    const LATEST_VERSION = '0.6.0'; // Increment this when making major UI changes
+    const LATEST_VERSION = '0.6.0'; 
     const storedVersion = localStorage.getItem('off1_version');
     const updateBanner = document.getElementById('update-banner');
 
-    if (storedVersion !== LATEST_VERSION) {
-        if (updateBanner) updateBanner.classList.remove('hidden');
-        localStorage.setItem('off1_version', LATEST_VERSION);
+    if (storedVersion) {
+        if (storedVersion !== LATEST_VERSION) {
+            if (updateBanner) updateBanner.classList.remove('hidden');
+        }
     }
+    // Always update to latest to prevent repeated banners
+    localStorage.setItem('off1_version', LATEST_VERSION);
 
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
