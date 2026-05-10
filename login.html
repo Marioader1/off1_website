@@ -33,6 +33,13 @@
                 <span id="btn-forgot-pw" style="font-size: 0.8rem; color: var(--primary-color); cursor: pointer;">Forgot Password?</span>
             </div>
 
+            <div id="verification-field" class="d-none" style="margin-top: 1.5rem;">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Enter the 6-digit code sent to your email.</p>
+                <input type="text" id="verification-code" class="login-input" placeholder="000000" maxlength="6" style="text-align: center; letter-spacing: 0.5rem; font-size: 1.2rem; font-weight: 600;">
+                <button type="button" id="verify-btn" class="btn btn-primary w-100" style="margin-top: 1rem;">Verify Email</button>
+                <span id="resend-code" style="display: block; margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; text-align: center;">Didn't receive a code? Resend</span>
+            </div>
+
             <div id="error-message" class="text-danger d-none" style="margin-top: 1rem; font-size: 0.85rem;"></div>
 
             <button type="submit" id="submit-btn" class="btn btn-primary w-100" style="margin-top: 1.5rem;">Login</button>

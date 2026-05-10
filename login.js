@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendResetBtn = document.getElementById('send-reset-btn');
     const backToLogin = document.getElementById('back-to-login');
     const errorMsg = document.getElementById('error-message');
+    const verificationField = document.getElementById('verification-field');
+    const verificationCodeInput = document.getElementById('verification-code');
+    const verifyBtn = document.getElementById('verify-btn');
+    const resendCodeBtn = document.getElementById('resend-code');
 
     let isLogin = true;
 
@@ -29,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isLogin = !isLogin;
         errorMsg.classList.add('d-none');
         forgotPwContainer.classList.add('d-none');
+        verificationField.classList.add('d-none');
         loginForm.classList.remove('d-none');
 
         if (isLogin) {
@@ -115,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
-            if (response.ok && data.status === 'success') {
+            if (response.ok && (data.status === 'success' || data.status === 'verification_required')) {
                 if (isLogin) {
                     // Success Login
                     localStorage.setItem('off1_token', data.token);
@@ -125,12 +130,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('off1_role_rank', data.role_rank || 0);
                     localStorage.setItem('off1_email', data.email || '');
                     window.location.href = 'index.html';
+                } else if (data.status === 'verification_required') {
+                    // Show verification UI
+                    loginForm.classList.add('d-none');
+                    verificationField.classList.remove('d-none');
+                    formSubtitle.textContent = 'One more step...';
+                    errorMsg.classList.add('d-none');
                 } else {
-                    // Success Register -> Switch to login
+                    // Success Register -> Switch to login (Legacy fallback)
                     isLogin = true;
-                    submitBtn.textContent = 'Login';
-                    toggleText.textContent = "Don't have an account? ";
-                    toggleLink.textContent = 'Register';
+                    updateToggleUI();
                     formSubtitle.textContent = 'Account created! Please login.';
                     formSubtitle.style.color = '#10b981';
                     passwordInput.value = '';
@@ -147,6 +156,68 @@ document.addEventListener('DOMContentLoaded', () => {
             if (submitBtn.textContent !== 'Register' && !isLogin) submitBtn.textContent = 'Register';
         }
     });
+
+    verifyBtn.addEventListener('click', async () => {
+        const code = verificationCodeInput.value.trim();
+        const username = usernameInput.value.trim();
+
+        if (code.length !== 6) {
+            showError('Please enter a 6-digit code.');
+            return;
+        }
+
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = 'Verifying...';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/verify_email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify({ username, code })
+            });
+
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                alert('Email verified! You can now login.');
+                verificationField.classList.add('d-none');
+                loginForm.classList.remove('d-none');
+                isLogin = true;
+                updateToggleUI();
+                formSubtitle.textContent = 'Verification successful! Please login.';
+                formSubtitle.style.color = '#10b981';
+            } else {
+                showError(data.message || 'Verification failed');
+            }
+        } catch (e) {
+            showError('Connection error during verification.');
+        } finally {
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = 'Verify Email';
+        }
+    });
+
+    resendCodeBtn.addEventListener('click', async () => {
+        // Just trigger register again (it will generate a new code and send email)
+        loginForm.dispatchEvent(new Event('submit'));
+    });
+
+    function updateToggleUI() {
+        if (isLogin) {
+            submitBtn.textContent = 'Login';
+            toggleText.textContent = "Don't have an account? ";
+            toggleLink.textContent = 'Register';
+            formSubtitle.textContent = 'Welcome back, system online.';
+            emailField.classList.add('d-none');
+            forgotPwLink.classList.remove('d-none');
+        } else {
+            submitBtn.textContent = 'Register';
+            toggleText.textContent = "Already have an account? ";
+            toggleLink.textContent = 'Login';
+            formSubtitle.textContent = 'Join the Off1 ecosystem.';
+            emailField.classList.remove('d-none');
+            forgotPwLink.classList.add('d-none');
+        }
+    }
 
     function showError(msg) {
         errorMsg.textContent = `❌ ${msg}`;
