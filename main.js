@@ -11,6 +11,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // Role Sync: Check server for latest admin/owner status in background
+    async function syncUserRole() {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify({ username: currentUser, auto_sync: true }) 
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                const oldAdmin = localStorage.getItem('off1_is_admin');
+                const oldOwner = localStorage.getItem('off1_is_owner');
+                
+                localStorage.setItem('off1_is_admin', data.is_admin);
+                localStorage.setItem('off1_is_owner', data.is_owner || false);
+                localStorage.setItem('off1_email', data.email || '');
+
+                // If roles changed, reload to unlock the UI
+                if (String(data.is_admin) !== oldAdmin || String(data.is_owner) !== oldOwner) {
+                    window.location.reload();
+                }
+            }
+        } catch (e) { console.warn("Role sync failed", e); }
+    }
+    syncUserRole(); // Run silently in background
+
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
     const chatHistory = document.getElementById('chat-history');
@@ -430,7 +456,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Admin Panel Logic ---
     const isAdmin = localStorage.getItem('off1_is_admin') === 'true';
-    if (isAdmin && btnAdmin) {
+    const isOwner = localStorage.getItem('off1_is_owner') === 'true';
+
+    if ((isAdmin || isOwner) && btnAdmin) {
         btnAdmin.classList.remove('d-none');
         btnAdmin.classList.remove('hidden');
 
