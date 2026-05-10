@@ -27,17 +27,16 @@
                     <label for="password">Password</label>
                     <input type="password" id="password" class="login-input" placeholder="Enter password" required autocomplete="current-password">
                 </div>
+                <div id="verification-field" class="d-none">
+                    <label for="verification-code">Verification Code</label>
+                    <p id="verify-email-info" style="font-size: 0.75rem; color: var(--primary-color); margin-bottom: 0.3rem;">Code sent to: [email]</p>
+                    <input type="text" id="verification-code" class="login-input" placeholder="X1Y2Z3" maxlength="6" style="text-align: center; letter-spacing: 0.3rem; font-weight: 600; text-transform: uppercase;">
+                    <span id="resend-code" style="display: block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer; text-align: right;">Resend Code</span>
+                </div>
             </div>
 
             <div id="forgot-password-link" style="margin-top: 0.8rem; text-align: right;">
                 <span id="btn-forgot-pw" style="font-size: 0.8rem; color: var(--primary-color); cursor: pointer;">Forgot Password?</span>
-            </div>
-
-            <div id="verification-field" class="d-none" style="margin-top: 1.5rem;">
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Enter the 6-digit code sent to your email.</p>
-                <input type="text" id="verification-code" class="login-input" placeholder="000000" maxlength="6" style="text-align: center; letter-spacing: 0.5rem; font-size: 1.2rem; font-weight: 600;">
-                <button type="button" id="verify-btn" class="btn btn-primary w-100" style="margin-top: 1rem;">Verify Email</button>
-                <span id="resend-code" style="display: block; margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; text-align: center;">Didn't receive a code? Resend</span>
             </div>
 
             <div id="error-message" class="text-danger d-none" style="margin-top: 1rem; font-size: 0.85rem;"></div>

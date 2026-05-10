@@ -21,8 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const verificationCodeInput = document.getElementById('verification-code');
     const verifyBtn = document.getElementById('verify-btn');
     const resendCodeBtn = document.getElementById('resend-code');
+    const verifyEmailInfo = document.getElementById('verify-email-info');
 
     let isLogin = true;
+    let isVerifying = false;
 
     // Redirect if already logged in
     if (localStorage.getItem('off1_token')) {
@@ -31,10 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     toggleLink.addEventListener('click', () => {
         isLogin = !isLogin;
+        isVerifying = false;
         errorMsg.classList.add('d-none');
         forgotPwContainer.classList.add('d-none');
         verificationField.classList.add('d-none');
         loginForm.classList.remove('d-none');
+        
+        // Reset inputs visibility
+        usernameInput.parentElement.classList.remove('d-none');
+        passwordInput.parentElement.classList.remove('d-none');
+        emailInput.parentElement.classList.remove('d-none');
 
         if (isLogin) {
             submitBtn.textContent = 'Login';
@@ -97,8 +105,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const username = usernameInput.value.trim();
         const password = passwordInput.value.trim();
+        const email = emailInput.value.trim();
         
         if (!username || !password) return;
+
+        // If we are in verifying mode, handle verification instead
+        if (isVerifying) {
+            handleVerification(username);
+            return;
+        }
 
         submitBtn.disabled = true;
         submitBtn.textContent = isLogin ? 'Logging in...' : 'Registering...';
@@ -106,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const endpoint = isLogin ? '/api/login' : '/api/register';
         const payload = { username, password };
-        if (!isLogin) payload.email = emailInput.value.trim();
+        if (!isLogin) payload.email = email;
 
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -131,14 +146,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('off1_email', data.email || '');
                     window.location.href = 'index.html';
                 } else if (data.status === 'verification_required') {
-                    // Show verification UI
-                    loginForm.classList.add('d-none');
+                    // Enter Verification State
+                    isVerifying = true;
                     verificationField.classList.remove('d-none');
-                    formSubtitle.textContent = 'One more step...';
-                    errorMsg.classList.add('d-none');
+                    verifyEmailInfo.textContent = `Code sent to: ${email}`;
+                    submitBtn.textContent = 'Verify Account';
+                    formSubtitle.textContent = 'Please verify your email to continue.';
+                    
+                    // Optional: Hide username/password/email fields to focus on code
+                    // usernameInput.parentElement.classList.add('d-none');
+                    // passwordInput.parentElement.classList.add('d-none');
+                    // emailInput.parentElement.classList.add('d-none');
                 } else {
                     // Success Register -> Switch to login (Legacy fallback)
                     isLogin = true;
+                    isVerifying = false;
                     updateToggleUI();
                     formSubtitle.textContent = 'Account created! Please login.';
                     formSubtitle.style.color = '#10b981';
@@ -152,22 +174,22 @@ document.addEventListener('DOMContentLoaded', () => {
             showError('Server connection failed. Check your backend.');
         } finally {
             submitBtn.disabled = false;
-            if (submitBtn.textContent !== 'Login' && isLogin) submitBtn.textContent = 'Login';
-            if (submitBtn.textContent !== 'Register' && !isLogin) submitBtn.textContent = 'Register';
+            if (!isVerifying) {
+                if (submitBtn.textContent !== 'Login' && isLogin) submitBtn.textContent = 'Login';
+                if (submitBtn.textContent !== 'Register' && !isLogin) submitBtn.textContent = 'Register';
+            }
         }
     });
 
-    verifyBtn.addEventListener('click', async () => {
-        const code = verificationCodeInput.value.trim();
-        const username = usernameInput.value.trim();
-
+    async function handleVerification(username) {
+        const code = verificationCodeInput.value.trim().toUpperCase();
         if (code.length !== 6) {
-            showError('Please enter a 6-digit code.');
+            showError('Please enter the 6-character code.');
             return;
         }
 
-        verifyBtn.disabled = true;
-        verifyBtn.textContent = 'Verifying...';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Verifying...';
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/verify_email`, {
@@ -178,26 +200,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             if (response.ok && data.status === 'success') {
-                alert('Email verified! You can now login.');
-                verificationField.classList.add('d-none');
-                loginForm.classList.remove('d-none');
                 isLogin = true;
+                isVerifying = false;
+                verificationField.classList.add('d-none');
                 updateToggleUI();
                 formSubtitle.textContent = 'Verification successful! Please login.';
                 formSubtitle.style.color = '#10b981';
+                alert('Account verified successfully! You can now login.');
             } else {
-                showError(data.message || 'Verification failed');
+                showError(data.message || 'Invalid code. Please try again.');
             }
         } catch (e) {
             showError('Connection error during verification.');
         } finally {
-            verifyBtn.disabled = false;
-            verifyBtn.textContent = 'Verify Email';
+            submitBtn.disabled = false;
+            if (isVerifying) submitBtn.textContent = 'Verify Account';
         }
-    });
+    }
 
     resendCodeBtn.addEventListener('click', async () => {
         // Just trigger register again (it will generate a new code and send email)
+        isVerifying = false;
         loginForm.dispatchEvent(new Event('submit'));
     });
 
