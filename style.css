@@ -62,7 +62,7 @@ body {
 
 /* Sidebar Styles */
 .sidebar {
-    width: 280px;
+    width: 320px;
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
