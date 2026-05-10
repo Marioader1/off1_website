@@ -89,14 +89,103 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Logout functionality
     const logoutBtn = document.getElementById('logout-btn');
+    function performLogout() {
+        localStorage.removeItem('off1_token');
+        localStorage.removeItem('off1_username');
+        localStorage.removeItem('off1_is_admin');
+        localStorage.removeItem('off1_email');
+        window.location.href = 'login.html';
+    }
+
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('off1_token');
-            localStorage.removeItem('off1_username');
-            localStorage.removeItem('off1_is_admin');
-            localStorage.removeItem('off1_email');
-            window.location.href = 'login.html';
+        logoutBtn.addEventListener('click', performLogout);
+    }
+
+    // Account Deletion Flow
+    const btnDeleteAccount = document.getElementById('btn-delete-account');
+    const deleteModal = document.getElementById('delete-confirm-modal');
+    const deleteTitle = document.getElementById('delete-warning-title');
+    const deleteText = document.getElementById('delete-warning-text');
+    const deleteYesBtn = document.getElementById('delete-yes');
+    const deleteNoBtn = document.getElementById('delete-no');
+    const deleteActions = document.getElementById('delete-modal-actions');
+
+    let deleteStep = 0;
+
+    if (btnDeleteAccount) {
+        btnDeleteAccount.addEventListener('click', () => {
+            deleteStep = 1;
+            settingsModal.classList.add('hidden');
+            deleteModal.classList.remove('hidden');
+            updateDeleteModal();
         });
+    }
+
+    deleteNoBtn.addEventListener('click', () => {
+        deleteModal.classList.add('hidden');
+        deleteStep = 0;
+    });
+
+    deleteYesBtn.addEventListener('click', async () => {
+        if (deleteStep < 3) {
+            deleteStep++;
+            updateDeleteModal();
+        } else {
+            // Final Step - Perform Deletion
+            deleteYesBtn.disabled = true;
+            deleteYesBtn.textContent = 'Deleting...';
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/delete_account`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({ username: currentUser })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Your account has been deleted.');
+                    performLogout();
+                } else {
+                    alert('Error: ' + data.message);
+                    deleteModal.classList.add('hidden');
+                }
+            } catch (e) {
+                alert('Connection failed.');
+                deleteModal.classList.add('hidden');
+            } finally {
+                deleteYesBtn.disabled = false;
+            }
+        }
+    });
+
+    function updateDeleteModal() {
+        // Reset button order to default first
+        deleteActions.style.flexDirection = 'row';
+        deleteNoBtn.style.order = '1';
+        deleteYesBtn.style.order = '2';
+
+        if (deleteStep === 1) {
+            deleteTitle.textContent = 'Wait!';
+            deleteTitle.style.color = '#fbbf24'; // Yellow
+            deleteText.textContent = 'Are you absolutely sure you want to delete your account? This cannot be undone.';
+            deleteYesBtn.textContent = 'Yes, I am sure';
+            deleteNoBtn.textContent = 'No, take me back';
+        } else if (deleteStep === 2) {
+            deleteTitle.textContent = 'CRITICAL WARNING';
+            deleteTitle.style.color = '#f87171'; // Lighter Red
+            deleteText.textContent = 'ALL your chat history, settings, and personal memory will be WIPED FOREVER. Continue?';
+            deleteYesBtn.textContent = 'I understand, continue';
+            deleteNoBtn.textContent = 'Stop! Keep my data';
+        } else if (deleteStep === 3) {
+            deleteTitle.textContent = 'FINAL CONFIRMATION';
+            deleteTitle.style.color = '#ef4444'; // Pure Red
+            deleteText.textContent = 'Last chance. To confirm you REALLY want to do this, we moved the button. Click the left button to delete.';
+            deleteYesBtn.textContent = 'PERMANENTLY DELETE';
+            deleteNoBtn.textContent = 'CANCEL';
+            
+            // SWAP POSITIONS: Yes on Left, No on Right
+            deleteYesBtn.style.order = '1';
+            deleteNoBtn.style.order = '2';
+        }
     }
 
     // User Profile Initialization

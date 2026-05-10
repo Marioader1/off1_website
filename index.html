@@ -119,6 +119,10 @@
                     <button type="submit" class="btn btn-primary" style="flex: 1;">Save</button>
                     <button type="button" id="close-settings-btn" class="btn btn-secondary" style="flex: 1;">Cancel</button>
                 </div>
+                <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,0,0,0.2);">
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Danger Zone</p>
+                    <button type="button" id="btn-delete-account" class="btn btn-secondary w-100" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">Delete Account</button>
+                </div>
             </form>
         </div>
     </div>
@@ -218,6 +222,19 @@
             <div class="modal-actions" style="display: flex; flex-direction: column; gap: 0.8rem;">
                 <button id="busy-watch-ad" class="btn btn-primary" style="width: 100%;">Watch Ad & Support ❤️</button>
                 <button id="busy-close" class="btn btn-secondary" style="width: 100%;">I'll Just Wait</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Deletion Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal-content glass-panel" style="max-width: 400px;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+            <h2 id="delete-warning-title" class="glow-text" style="color: #ef4444;">Warning</h2>
+            <p id="delete-warning-text" style="margin: 1.5rem 0; line-height: 1.5; color: var(--text-primary);">Are you sure you want to delete your account?</p>
+            <div id="delete-modal-actions" class="modal-actions" style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button id="delete-no" class="btn btn-secondary" style="flex: 1;">No, keep it</button>
+                <button id="delete-yes" class="btn btn-primary" style="flex: 1; background: #ef4444;">Yes, delete</button>
             </div>
         </div>
     </div>
