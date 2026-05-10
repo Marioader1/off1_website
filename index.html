@@ -190,6 +190,20 @@
         </div>
     </div>
 
+    <!-- Server Busy Modal -->
+    <div id="busy-modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal-content glass-panel" style="max-width: 450px;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⏳</div>
+            <h2 class="glow-text">Server is Busy</h2>
+            <p style="margin: 1rem 0;">I'm currently handling other complex searches. Your request is in the queue!</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem;">While you wait, would you like to watch a short ad to support our server costs?</p>
+            <div class="modal-actions" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                <button id="busy-watch-ad" class="btn btn-primary" style="width: 100%;">Watch Ad & Support ❤️</button>
+                <button id="busy-close" class="btn btn-secondary" style="width: 100%;">I'll Just Wait</button>
+            </div>
+        </div>
+    </div>
+
     <script src="main.js"></script>
 </body>
 </html>

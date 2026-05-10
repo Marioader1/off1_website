@@ -19,16 +19,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnAdmin = document.getElementById('btn-admin');
     const adminModal = document.getElementById('admin-modal');
     const closeAdminBtn = document.getElementById('close-admin-btn');
-    
+
     const btnSettings = document.getElementById('btn-settings');
     const settingsModal = document.getElementById('settings-modal');
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const settingsForm = document.getElementById('settings-form');
-    
+
     const btnHistory = document.getElementById('btn-history');
     const historyModal = document.getElementById('history-modal');
     const closeHistoryBtn = document.getElementById('close-history-btn');
     const historySessionList = document.getElementById('history-session-list');
+
+    // Busy Modal
+    const busyModal = document.getElementById('busy-modal-overlay');
+    const busyWatchAdBtn = document.getElementById('busy-watch-ad');
+    const busyCloseBtn = document.getElementById('busy-close');
 
     // Client Speed Test
     const runClientTestBtn = document.getElementById('run-client-test-btn');
@@ -59,12 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
         mobileMenuBtn.addEventListener('click', () => {
             sidebar.classList.toggle('open');
         });
-        
+
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768 && 
-                sidebar.classList.contains('open') && 
-                !sidebar.contains(e.target) && 
+            if (window.innerWidth <= 768 &&
+                sidebar.classList.contains('open') &&
+                !sidebar.contains(e.target) &&
                 !mobileMenuBtn.contains(e.target)) {
                 sidebar.classList.remove('open');
             }
@@ -73,13 +78,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     chatForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
         const message = userInput.value.trim();
         if (!message) return;
 
         // 1. Add user message to UI
         appendMessage('user', message);
-        
+
         // Clear input
         userInput.value = '';
 
@@ -90,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function appendMessage(sender, text) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
-        
+
         if (sender === 'user') {
             messageDiv.classList.add('user-message');
             messageDiv.innerHTML = `
@@ -143,10 +148,24 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(timeoutId);
 
             const data = await response.json();
-            
-            // Remove loading indicator
-            document.getElementById(loadingId).remove();
-            
+
+            // Handle Busy Status
+            if (data.status === 'busy') {
+                busyModal.classList.remove('hidden');
+                document.getElementById(loadingId).remove();
+                appendMessage('ai', data.response);
+                return;
+            }
+
+            // Handle Queued Status (Async)
+            if (data.status === 'queued') {
+                // Keep the loading indicator and start streaming
+                const loadingMsg = document.querySelector(`#${loadingId} .content`);
+                if (loadingMsg) loadingMsg.innerHTML = `Queued... Position #${data.position} ⏳`;
+                streamResults(currentUser, loadingId);
+                return;
+            }
+
             // Add real response
             appendMessage('ai', data.response);
         } catch (error) {
@@ -161,12 +180,76 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function streamResults(user_name, loadingId) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/search_stream?user_name=${encodeURIComponent(user_name)}`, {
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+
+                // Process SSE format (data: ...)
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); // Keep partial line in buffer
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = JSON.parse(line.substring(6));
+
+                        const loadingBubble = document.getElementById(loadingId);
+                        if (!loadingBubble) return;
+                        const contentDiv = loadingBubble.querySelector('.content');
+
+                        if (data.status === 'ready') {
+                            loadingBubble.remove();
+                            let response_text = `found ${data.results.length} groups of items:\n`;
+                            data.results.forEach(group => {
+                                response_text += `\n📦 ${group.group_name}\n`;
+                                const sorted = group.items.sort((a, b) => a.price - b.price);
+                                const min_price = sorted[0].price;
+                                sorted.forEach(i => {
+                                    const star = i.price <= min_price ? " ⭐" : "";
+                                    response_text += `   - ${i.store}: ${i.price} SAR${star}\n`;
+                                });
+                            });
+                            appendMessage('ai', response_text);
+                            return; // End stream
+                        } else if (data.status === 'waiting') {
+                            if (contentDiv) contentDiv.innerHTML = `Queued... Position #${data.position} ⏳`;
+                        } else if (data.status === 'searching') {
+                            if (contentDiv) contentDiv.innerHTML = `Searching the stores now... 🔎`;
+                        } else if (data.status === 'error') {
+                            loadingBubble.remove();
+                            appendMessage('ai', `❌ Search Error: ${data.message}`);
+                            return;
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Streaming error:", e);
+            // Fallback to single poll after error
+            setTimeout(() => {
+                const loadingBubble = document.getElementById(loadingId);
+                if (loadingBubble) loadingBubble.remove();
+            }, 1000);
+        }
+    }
+
     function scrollToBottom() {
         chatHistory.scrollTop = chatHistory.scrollHeight;
     }
 
     function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, 
+        return str.replace(/[&<>'"]/g,
             tag => ({
                 '&': '&amp;',
                 '<': '&lt;',
@@ -190,10 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function showInterstitialAd() {
         interstitialAd.classList.remove('hidden');
         closeAdBtn.classList.add('hidden');
-        
+
         let timeLeft = 5;
         adTimer.textContent = `Ad finishes in ${timeLeft}s`;
-        
+
         const interval = setInterval(() => {
             timeLeft--;
             if (timeLeft > 0) {
@@ -204,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 closeAdBtn.classList.remove('hidden');
             }
         }, 1000);
-        
+
         closeAdBtn.onclick = () => {
             interstitialAd.classList.add('hidden');
         };
@@ -229,11 +312,11 @@ document.addEventListener('DOMContentLoaded', () => {
             adBait.style.top = '-1000px';
             adBait.style.left = '-1000px';
             document.body.appendChild(adBait);
-            
+
             setTimeout(() => {
                 const isBlocked = adBait.offsetHeight === 0 || window.getComputedStyle(adBait).display === 'none';
                 adBait.remove();
-                
+
                 if (isBlocked) {
                     sessionStorage.setItem('ad_consent_asked', 'true');
                     sessionStorage.setItem('ad_consent', 'false');
@@ -256,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionStorage.setItem('ad_consent_asked', 'true');
             sessionStorage.setItem('ad_consent', 'true');
             adModal.classList.add('hidden');
-            
+
             setTimeout(() => {
                 showInterstitialAd();
             }, 500);
@@ -265,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnDecline.addEventListener('click', () => {
             sessionStorage.setItem('ad_consent_asked', 'true');
             sessionStorage.setItem('ad_consent', 'false');
-            
+
             showMessageAndDismiss(`
                 <h2 class="glow-text">No Problem!</h2>
                 <p style="margin-top: 1rem; font-size: 1.1rem;">That's ok I hope you have a good day</p>
@@ -273,10 +356,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const btnSupport = document.getElementById('btn-support');
     if (btnSupport && interstitialAd) {
         btnSupport.addEventListener('click', () => {
             showInterstitialAd();
+        });
+    }
+
+    // --- Busy Modal Logic ---
+    if (busyModal && busyWatchAdBtn && busyCloseBtn) {
+        busyWatchAdBtn.addEventListener('click', () => {
+            busyModal.classList.add('hidden');
+            showInterstitialAd();
+        });
+
+        busyCloseBtn.addEventListener('click', () => {
+            busyModal.classList.add('hidden');
         });
     }
 
@@ -322,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         headers: { 'ngrok-skip-browser-warning': 'true' }
                     });
                     const data = await res.json();
-                    
+
                     if (data.status === 'success') {
                         document.getElementById('st-ping').textContent = `${data.ping} ms`;
                         document.getElementById('st-dl').textContent = `${data.download} Mbps`;
@@ -371,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const response = await fetch(testFileUrl);
                     const blob = await response.blob();
                     const endDl = performance.now();
-                    
+
                     const durationInSeconds = (endDl - startDl) / 1000;
                     const sizeInBits = blob.size * 8;
                     const speedMbps = (sizeInBits / durationInSeconds) / (1024 * 1024);
@@ -418,11 +512,11 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const ai_name = document.getElementById('setting-ai-name').value;
             const language = document.getElementById('setting-language').value;
-            
+
             try {
                 await fetch(`${API_BASE_URL}/api/settings`, {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
                         'ngrok-skip-browser-warning': 'true'
                     },
@@ -463,7 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (typeof msg === 'string') {
                 dateStr = "Legacy Chats";
             }
-            
+
             if (!groups[dateStr]) groups[dateStr] = [];
             groups[dateStr].push(msg);
         });
@@ -474,7 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!historySessionList) return;
         historySessionList.innerHTML = '';
         const groups = groupHistoryByDate();
-        
+
         const dates = Object.keys(groups).sort((a, b) => {
             if (a.includes("Legacy") || a.includes("Older")) return 1;
             if (b.includes("Legacy") || b.includes("Older")) return -1;
@@ -490,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const msgs = groups[date];
             const btn = document.createElement('button');
             btn.className = 'session-btn';
-            
+
             let displayDate = date;
             if (date === new Date().toLocaleDateString()) displayDate = 'Today';
             else if (date === new Date(Date.now() - 86400000).toLocaleDateString()) displayDate = 'Yesterday';
@@ -508,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderSpecificSession(messages) {
-        chatHistory.innerHTML = ''; 
+        chatHistory.innerHTML = '';
         messages.forEach(msg => {
             if (typeof msg === 'string') {
                 const split = msg.split(': ');
