@@ -121,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('off1_token', data.token);
                     localStorage.setItem('off1_username', username);
                     localStorage.setItem('off1_is_admin', data.is_admin);
+                    localStorage.setItem('off1_is_owner', data.is_owner || false);
                     localStorage.setItem('off1_email', data.email || '');
                     window.location.href = 'index.html';
                 } else {

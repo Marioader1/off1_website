@@ -61,10 +61,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailStatus = document.getElementById('email-status');
 
     if (displayUsername && currentUser) {
-        displayUsername.textContent = currentUser;
         userInitial.textContent = currentUser.charAt(0).toUpperCase();
         
         const userEmail = localStorage.getItem('off1_email');
+        const isOwner = localStorage.getItem('off1_is_owner') === 'true';
+
+        if (isOwner) {
+            displayUsername.innerHTML = `${currentUser} <span class="owner-badge">OWNER ⭐</span>`;
+        } else {
+            displayUsername.textContent = currentUser;
+        }
+
         if (!userEmail || userEmail === '') {
             emailStatus.innerHTML = '<span class="email-warning" id="setup-email-btn">Set up email</span>';
             const setupBtn = document.getElementById('setup-email-btn');
