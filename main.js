@@ -21,21 +21,31 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                const oldAdmin = localStorage.getItem('off1_is_admin');
-                const oldOwner = localStorage.getItem('off1_is_owner');
+                const oldRank = localStorage.getItem('off1_role_rank');
                 
                 localStorage.setItem('off1_is_admin', data.is_admin);
                 localStorage.setItem('off1_is_owner', data.is_owner || false);
+                localStorage.setItem('off1_role_rank', data.role_rank || 0);
                 localStorage.setItem('off1_email', data.email || '');
 
-                // If roles changed, reload to unlock the UI
-                if (String(data.is_admin) !== oldAdmin || String(data.is_owner) !== oldOwner) {
+                // If rank changed, reload to unlock the UI
+                if (String(data.role_rank) !== oldRank) {
                     window.location.reload();
                 }
             }
         } catch (e) { console.warn("Role sync failed", e); }
     }
     syncUserRole(); // Run silently in background
+
+    // Update Notification Logic
+    const LATEST_VERSION = '0.6.0'; // Increment this when making major UI changes
+    const storedVersion = localStorage.getItem('off1_version');
+    const updateBanner = document.getElementById('update-banner');
+
+    if (storedVersion !== LATEST_VERSION) {
+        if (updateBanner) updateBanner.classList.remove('hidden');
+        localStorage.setItem('off1_version', LATEST_VERSION);
+    }
 
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
@@ -90,10 +100,12 @@ document.addEventListener('DOMContentLoaded', () => {
         userInitial.textContent = currentUser.charAt(0).toUpperCase();
         
         const userEmail = localStorage.getItem('off1_email');
-        const isOwner = localStorage.getItem('off1_is_owner') === 'true';
+        const roleRank = parseInt(localStorage.getItem('off1_role_rank') || '0');
 
-        if (isOwner) {
+        if (roleRank === 2) {
             displayUsername.innerHTML = `${currentUser} <span class="owner-badge">OWNER ⭐</span>`;
+        } else if (roleRank === 1) {
+            displayUsername.innerHTML = `${currentUser} <span class="admin-badge">ADMIN 👑</span>`;
         } else {
             displayUsername.textContent = currentUser;
         }
@@ -470,10 +482,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Admin Panel Logic ---
-    const isAdmin = localStorage.getItem('off1_is_admin') === 'true';
-    const isOwner = localStorage.getItem('off1_is_owner') === 'true';
+    const roleRank = parseInt(localStorage.getItem('off1_role_rank') || '0');
 
-    if ((isAdmin || isOwner) && btnAdmin) {
+    if (roleRank >= 1 && btnAdmin) {
         btnAdmin.classList.remove('d-none');
         btnAdmin.classList.remove('hidden');
 

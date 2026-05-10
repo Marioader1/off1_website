@@ -180,24 +180,39 @@ body {
     font-size: 0.95rem;
     color: var(--text-primary);
     display: flex;
-    flex-direction: column;
+    align-items: center; /* Changed from column to center for inline badges */
     gap: 2px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible; /* Changed to visible to show badges */
+    text-overflow: clip;
 }
 
 .owner-badge {
-    font-size: 0.7rem;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #000;
+    font-size: 0.65rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: white;
-    padding: 2px 6px;
+    padding: 2px 8px;
     border-radius: 4px;
-    margin-top: 4px;
-    width: fit-content;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-    letter-spacing: 0.5px;
+    margin-left: 8px;
+    vertical-align: middle;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.admin-badge {
+    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.4);
+    flex-shrink: 0;
+    display: inline-block;
 }
 
 .username-label {
@@ -842,4 +857,45 @@ select:focus-visible {
 
 .login-toggle span:hover {
     text-decoration: underline;
+}
+
+/* Update Banner */
+.update-banner {
+    background: linear-gradient(90deg, #2563eb, #0ea5e9);
+    color: white;
+    text-align: center;
+    padding: 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    position: relative;
+    z-index: 3001;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    animation: slideDown 0.5s ease-out;
+}
+
+.update-banner a {
+    color: #fff;
+    text-decoration: underline;
+    font-weight: 800;
+}
+
+.close-update {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+}
+
+.hidden {
+    display: none !important;
 }
