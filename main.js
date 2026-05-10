@@ -37,16 +37,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     syncUserRole(); // Run silently in background
 
-    // Update Notification Logic
+    // Update Notification & Version Logic
     const LATEST_VERSION = '0.6.0'; 
     const storedVersion = localStorage.getItem('off1_version');
     const updateBanner = document.getElementById('update-banner');
+    const versionDisplay = document.getElementById('platform-version');
 
-    if (storedVersion) {
-        if (storedVersion !== LATEST_VERSION) {
-            if (updateBanner) updateBanner.classList.remove('hidden');
-        }
+    if (versionDisplay) versionDisplay.textContent = LATEST_VERSION;
+
+    if (storedVersion && storedVersion !== LATEST_VERSION) {
+        if (updateBanner) updateBanner.classList.remove('hidden');
+    } else {
+        // If versions match or it's first time, ensure banner is hidden
+        if (updateBanner) updateBanner.classList.add('hidden');
     }
+    
     // Always update to latest to prevent repeated banners
     localStorage.setItem('off1_version', LATEST_VERSION);
 
