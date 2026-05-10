@@ -50,8 +50,55 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('off1_token');
             localStorage.removeItem('off1_username');
             localStorage.removeItem('off1_is_admin');
+            localStorage.removeItem('off1_email');
             window.location.href = 'login.html';
         });
+    }
+
+    // User Profile Initialization
+    const displayUsername = document.getElementById('display-username');
+    const userInitial = document.getElementById('user-initials');
+    const emailStatus = document.getElementById('email-status');
+
+    if (displayUsername && currentUser) {
+        displayUsername.textContent = currentUser;
+        userInitial.textContent = currentUser.charAt(0).toUpperCase();
+        
+        const userEmail = localStorage.getItem('off1_email');
+        if (!userEmail || userEmail === '') {
+            emailStatus.innerHTML = '<span class="email-warning" id="setup-email-btn">Set up email</span>';
+            const setupBtn = document.getElementById('setup-email-btn');
+            if (setupBtn) {
+                setupBtn.addEventListener('click', () => {
+                    const newEmail = prompt('Please enter your email to secure your account and allow password resets:');
+                    if (newEmail && newEmail.includes('@')) {
+                        updateUserEmail(newEmail);
+                    }
+                });
+            }
+        } else {
+            emailStatus.textContent = 'Email Verified ✓';
+            emailStatus.style.color = '#10b981';
+        }
+    }
+
+    async function updateUserEmail(email) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/update_user_email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify({ username: currentUser, email: email })
+            });
+            if (response.ok) {
+                localStorage.setItem('off1_email', email);
+                emailStatus.textContent = 'Email Verified ✓';
+                emailStatus.style.color = '#10b981';
+            } else {
+                alert('Failed to update email. Please try again.');
+            }
+        } catch (e) {
+            console.error('Email update error:', e);
+        }
     }
 
     // Focus input on load

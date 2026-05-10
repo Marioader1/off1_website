@@ -14,6 +14,10 @@
 
         <form id="login-form">
             <div class="login-input-group">
+                <div id="email-field" class="d-none">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" class="login-input" placeholder="Enter your email" autocomplete="email">
+                </div>
                 <div>
                     <label for="username">Username</label>
                     <input type="text" id="username" class="login-input" placeholder="Enter username" required autocomplete="username">
@@ -24,10 +28,22 @@
                 </div>
             </div>
 
+            <div id="forgot-password-link" style="margin-top: 0.8rem; text-align: right;">
+                <span id="btn-forgot-pw" style="font-size: 0.8rem; color: var(--primary-color); cursor: pointer;">Forgot Password?</span>
+            </div>
+
             <div id="error-message" class="text-danger d-none" style="margin-top: 1rem; font-size: 0.85rem;"></div>
 
-            <button type="submit" id="submit-btn" class="btn btn-primary w-100" style="margin-top: 2rem;">Login</button>
+            <button type="submit" id="submit-btn" class="btn btn-primary w-100" style="margin-top: 1.5rem;">Login</button>
         </form>
+
+        <!-- Forgot Password Modal (Simplified) -->
+        <div id="forgot-pw-container" class="d-none" style="margin-top: 2rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Enter your email to receive a reset link.</p>
+            <input type="email" id="forgot-email" class="login-input" placeholder="Your account email">
+            <button id="send-reset-btn" class="btn btn-secondary w-100" style="margin-top: 1rem;">Send Reset Link</button>
+            <span id="back-to-login" style="display: block; margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">Back to Login</span>
+        </div>
 
         <p class="login-toggle">
             <span id="toggle-text">Don't have an account? </span>

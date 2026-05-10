@@ -8,6 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleLink = document.getElementById('toggle-link');
     const toggleText = document.getElementById('toggle-text');
     const formSubtitle = document.getElementById('form-subtitle');
+    const emailField = document.getElementById('email-field');
+    const emailInput = document.getElementById('email');
+    const forgotPwLink = document.getElementById('forgot-password-link');
+    const btnForgotPw = document.getElementById('btn-forgot-pw');
+    const forgotPwContainer = document.getElementById('forgot-pw-container');
+    const forgotEmailInput = document.getElementById('forgot-email');
+    const sendResetBtn = document.getElementById('send-reset-btn');
+    const backToLogin = document.getElementById('back-to-login');
     const errorMsg = document.getElementById('error-message');
 
     let isLogin = true;
@@ -19,18 +27,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     toggleLink.addEventListener('click', () => {
         isLogin = !isLogin;
+        errorMsg.classList.add('d-none');
+        forgotPwContainer.classList.add('d-none');
+        loginForm.classList.remove('d-none');
+
         if (isLogin) {
             submitBtn.textContent = 'Login';
             toggleText.textContent = "Don't have an account? ";
             toggleLink.textContent = 'Register';
             formSubtitle.textContent = 'Welcome back, system online.';
+            emailField.classList.add('d-none');
+            forgotPwLink.classList.remove('d-none');
         } else {
             submitBtn.textContent = 'Register';
             toggleText.textContent = "Already have an account? ";
             toggleLink.textContent = 'Login';
             formSubtitle.textContent = 'Join the Off1 ecosystem.';
+            emailField.classList.remove('d-none');
+            forgotPwLink.classList.add('d-none');
         }
-        errorMsg.classList.add('d-none');
+    });
+
+    btnForgotPw.addEventListener('click', () => {
+        loginForm.classList.add('d-none');
+        forgotPwContainer.classList.remove('d-none');
+    });
+
+    backToLogin.addEventListener('click', () => {
+        forgotPwContainer.classList.add('d-none');
+        loginForm.classList.remove('d-none');
+    });
+
+    sendResetBtn.addEventListener('click', async () => {
+        const email = forgotEmailInput.value.trim();
+        if (!email) return;
+
+        sendResetBtn.disabled = true;
+        sendResetBtn.textContent = 'Sending...';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/forgot_password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                body: JSON.stringify({ email })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                alert(data.message);
+                forgotPwContainer.classList.add('d-none');
+                loginForm.classList.remove('d-none');
+            } else {
+                showError(data.message);
+            }
+        } catch (e) {
+            showError('Failed to contact server.');
+        } finally {
+            sendResetBtn.disabled = false;
+            sendResetBtn.textContent = 'Send Reset Link';
+        }
     });
 
     loginForm.addEventListener('submit', async (e) => {
@@ -46,6 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMsg.classList.add('d-none');
 
         const endpoint = isLogin ? '/api/login' : '/api/register';
+        const payload = { username, password };
+        if (!isLogin) payload.email = emailInput.value.trim();
 
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -54,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'ngrok-skip-browser-warning': 'true'
                 },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify(payload)
             });
 
             const data = await response.json();
@@ -65,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('off1_token', data.token);
                     localStorage.setItem('off1_username', username);
                     localStorage.setItem('off1_is_admin', data.is_admin);
+                    localStorage.setItem('off1_email', data.email || '');
                     window.location.href = 'index.html';
                 } else {
                     // Success Register -> Switch to login
