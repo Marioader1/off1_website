@@ -157,11 +157,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Handle Queued Status (Async)
-            if (data.status === 'queued') {
+            // Handle Queued/Searching Status (Async)
+            if (data.status === 'queued' || data.status === 'searching') {
                 // Keep the loading indicator and start streaming
                 const loadingMsg = document.querySelector(`#${loadingId} .content`);
-                if (loadingMsg) loadingMsg.innerHTML = `Queued... Position #${data.position} ⏳`;
+                if (loadingMsg) loadingMsg.innerHTML = data.response; 
                 streamResults(currentUser, loadingId);
                 return;
             }
