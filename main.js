@@ -357,6 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchAIResponse(userMessage) {
+        const loadingId = 'loading-' + Date.now();
         // 1. Check if the user's prompt itself is sensitive to show warning early
         const userPromptSensitive = checkSafety(userMessage);
         let earlyWarningHtml = '';
