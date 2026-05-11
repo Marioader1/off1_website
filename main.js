@@ -284,7 +284,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const SENSITIVE_KEYWORDS = [
         'dangerous', 'illegal', 'hack', 'steal', 'rob', 'kill', 'weapon', 'drug', 'bomb', 
         'exploit', 'malware', 'false', 'lie', 'fake', 'scam', 'darkweb', 'tor', 'violence',
-        'harmful', 'illegal', 'fraud', 'phishing'
+        'harmful', 'illegal', 'fraud', 'phishing',
+        "can't help you", "cannot help you", "assist you with that"
     ];
 
     function checkSafety(text) {
