@@ -280,6 +280,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Safety Keywords Filter
+    const SENSITIVE_KEYWORDS = [
+        'dangerous', 'illegal', 'hack', 'steal', 'rob', 'kill', 'weapon', 'drug', 'bomb', 
+        'exploit', 'malware', 'false', 'lie', 'fake', 'scam', 'darkweb', 'tor', 'violence',
+        'harmful', 'illegal', 'fraud', 'phishing'
+    ];
+
+    function checkSafety(text) {
+        if (!text) return false;
+        const lower = text.toLowerCase();
+        return SENSITIVE_KEYWORDS.some(word => lower.includes(word));
+    }
+
     chatForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
@@ -308,9 +321,33 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         } else {
             messageDiv.classList.add('ai-message');
+            
+            // Check for safety warning trigger
+            const needsWarning = checkSafety(text);
+            let warningHtml = '';
+            
+            if (needsWarning) {
+                warningHtml = `
+                    <div class="safety-warning">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+                            <path d="M7.86 2H16.14L22 7.86V16.14L16.14 22H7.86L2 16.14V7.86L7.86 2Z" fill="#ef4444"/>
+                            <path d="M12 8V13" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                            <circle cx="12" cy="16.5" r="1.2" fill="white"/>
+                        </svg>
+                        <div>
+                            <b>Safety Warning</b>
+                            Be careful with this response. It might mention things that are false, dangerous, or illegal. Check in with a trusted adult if you have questions.
+                        </div>
+                    </div>
+                `;
+            }
+
             messageDiv.innerHTML = `
                 <div class="avatar">O</div>
-                <div class="content">${escapeHTML(text)}</div>
+                <div class="content">
+                    ${warningHtml}
+                    ${escapeHTML(text).replace(/\n/g, '<br>')}
+                </div>
             `;
         }
 

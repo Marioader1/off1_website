@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const API_BASE_URL = 'https://miasmatical-kellie-quartan.ngrok-free.dev';
+    const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        ? 'http://localhost:5000' 
+        : 'https://miasmatical-kellie-quartan.ngrok-free.dev'; // Keep fallback for existing tunnel
     
     const loginForm = document.getElementById('login-form');
     const usernameInput = document.getElementById('username');
@@ -76,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!email) return;
 
         sendResetBtn.disabled = true;
-        sendResetBtn.textContent = 'Sending...';
+        sendResetBtn.textContent = 'Sending Code...';
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/forgot_password`, {
@@ -86,9 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await response.json();
             if (response.ok) {
-                alert(data.message);
-                forgotPwContainer.classList.add('d-none');
-                loginForm.classList.remove('d-none');
+                alert("Reset code sent! Redirecting to reset page...");
+                window.location.href = 'reset_password.html';
             } else {
                 showError(data.message);
             }
@@ -96,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showError('Failed to contact server.');
         } finally {
             sendResetBtn.disabled = false;
-            sendResetBtn.textContent = 'Send Reset Link';
+            sendResetBtn.textContent = 'Send Reset Code';
         }
     });
 
