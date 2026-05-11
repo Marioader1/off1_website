@@ -415,7 +415,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Handle Busy Status
             if (data.status === 'busy') {
                 busyModal.classList.remove('hidden');
-                document.getElementById(loadingId).remove();
+                const loadingBubble = document.getElementById(loadingId);
+                if (loadingBubble) loadingBubble.remove();
                 appendMessage('ai', data.response);
                 return;
             }
