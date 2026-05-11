@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAIResponse(message);
     });
 
-    function appendMessage(sender, text) {
+    function appendMessage(sender, text, forceWarning = false) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
 
@@ -322,8 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             messageDiv.classList.add('ai-message');
             
-            // Check for safety warning trigger
-            const needsWarning = checkSafety(text);
+            // Check for safety warning trigger (or if forced from prompt)
+            const needsWarning = forceWarning || checkSafety(text);
             let warningHtml = '';
             
             if (needsWarning) {
@@ -356,14 +356,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchAIResponse(userMessage) {
-        // Show a temporary loading indicator
-        const loadingId = 'loading-' + Date.now();
+        // 1. Check if the user's prompt itself is sensitive to show warning early
+        const userPromptSensitive = checkSafety(userMessage);
+        let earlyWarningHtml = '';
+        if (userPromptSensitive) {
+            earlyWarningHtml = `
+                <div class="safety-warning">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+                        <path d="M7.86 2H16.14L22 7.86V16.14L16.14 22H7.86L2 16.14V7.86L7.86 2Z" fill="#ef4444"/>
+                        <path d="M12 8V13" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="12" cy="16.5" r="1.2" fill="white"/>
+                    </svg>
+                    <div>
+                        <b>Safety Warning</b>
+                        Be careful with this response. It might mention things that are false, dangerous, or illegal. Check in with a trusted adult if you have questions.
+                    </div>
+                </div>
+            `;
+        }
+
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', 'ai-message');
         messageDiv.id = loadingId;
         messageDiv.innerHTML = `
             <div class="avatar">O</div>
-            <div class="content glow-text">Thinking...</div>
+            <div class="content">
+                ${earlyWarningHtml}
+                <span class="glow-text">Thinking...</span>
+            </div>
         `;
         chatHistory.appendChild(messageDiv);
         scrollToBottom();
@@ -408,7 +428,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Add real response
-            appendMessage('ai', data.response);
+            const loadingBubble = document.getElementById(loadingId);
+            if (loadingBubble) loadingBubble.remove();
+            
+            appendMessage('ai', data.response, userPromptSensitive);
         } catch (error) {
             clearTimeout(timeoutId);
             console.error("Error communicating with server:", error);
