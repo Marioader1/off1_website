@@ -437,11 +437,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             clearTimeout(timeoutId);
             console.error("Error communicating with server:", error);
-            document.getElementById(loadingId).remove();
+            const loadingBubble = document.getElementById(loadingId);
+            if (loadingBubble) loadingBubble.remove();
+            
             if (error.name === 'AbortError') {
                 appendMessage('ai', "❌ The request timed out. The server might be slow or offline.");
             } else {
-                appendMessage('ai', "❌ Failed to connect to the server. Please ensure the backend is running on port 5000.");
+                appendMessage('ai', "❌ Failed to connect to the server. Please ensure the backend is running on port 5000 and the ngrok URL is correct.");
             }
         }
     }
