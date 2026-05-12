@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     syncUserRole(); // Run silently in background
 
     // Update Notification & Version Logic
-    const LATEST_VERSION = '0.6.0'; 
+    const LATEST_VERSION = '0.7.0'; 
     const storedVersion = localStorage.getItem('off1_version');
     const updateBanner = document.getElementById('update-banner');
     const versionDisplay = document.getElementById('platform-version');
@@ -905,6 +905,114 @@ document.addEventListener('DOMContentLoaded', () => {
         closeHistoryBtn.addEventListener('click', () => {
             historyModal.classList.add('hidden');
         });
+    }
+
+    // --- Passkey (WebAuthn) Implementation ---
+
+    async function setupPasskey() {
+        const username = localStorage.getItem('off1_user');
+        if (!username) {
+            alert("You must be logged in to setup a Passkey.");
+            return;
+        }
+
+        const btn = document.getElementById('btn-setup-passkey');
+        const badge = document.getElementById('passkey-status-badge');
+        const originalText = btn.innerHTML;
+        
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            // 1. Get registration options from server
+            const resp = await fetch(`${API_BASE_URL}/api/passkey/register/begin`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify({ username })
+            });
+
+            const options = await resp.json();
+            if (options.status === 'error') throw new Error(options.message);
+
+            // 2. Adjust options for navigator.credentials.create
+            options.challenge = bufferFromBase64Url(options.challenge);
+            options.user.id = bufferFromBase64Url(options.user.id);
+            if (options.excludeCredentials) {
+                options.excludeCredentials.forEach(cred => {
+                    cred.id = bufferFromBase64Url(cred.id);
+                });
+            }
+
+            // 3. Create credential
+            const credential = await navigator.credentials.create({ publicKey: options });
+
+            // 4. Send back to server
+            const completeResp = await fetch(`${API_BASE_URL}/api/passkey/register/complete`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify({
+                    username,
+                    credential: {
+                        id: credential.id,
+                        rawId: base64UrlFromBuffer(credential.rawId),
+                        response: {
+                            attestationObject: base64UrlFromBuffer(credential.response.attestationObject),
+                            clientDataJSON: base64UrlFromBuffer(credential.response.clientDataJSON),
+                            transports: credential.response.getTransports ? credential.response.getTransports() : []
+                        },
+                        type: credential.type
+                    }
+                })
+            });
+
+            const result = await completeResp.json();
+            if (result.status === 'success') {
+                badge.innerText = 'Active';
+                badge.style.background = 'rgba(16, 185, 129, 0.2)';
+                alert("Passkey registered successfully! You can now log in using your device biometrics.");
+            } else {
+                throw new Error(result.message);
+            }
+
+        } catch (err) {
+            console.error("Passkey Setup Error:", err);
+            alert(err.message || "Failed to setup Passkey. Ensure your browser supports WebAuthn and you are using HTTPS.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    function base64UrlFromBuffer(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    function bufferFromBase64Url(base64url) {
+        const padding = '='.repeat((4 - base64url.length % 4) % 4);
+        const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const binary = atob(base64);
+        const buffer = new ArrayBuffer(binary.length);
+        const bytes = new Uint8Array(buffer);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return buffer;
+    }
+
+    const setupPasskeyBtn = document.getElementById('btn-setup-passkey');
+    if (setupPasskeyBtn) {
+        setupPasskeyBtn.onclick = setupPasskey;
     }
 
 });

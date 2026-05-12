@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok && (data.status === 'success' || data.status === 'verification_required')) {
                 if (isLogin) {
                     // Success Login
+                    // Success Login
                     localStorage.setItem('off1_token', data.token);
                     localStorage.setItem('off1_username', username);
                     localStorage.setItem('off1_is_admin', data.is_admin);
@@ -246,5 +247,129 @@ document.addEventListener('DOMContentLoaded', () => {
     function showError(msg) {
         errorMsg.textContent = `❌ ${msg}`;
         errorMsg.classList.remove('d-none');
+    }
+
+});
+
+// --- Passkey (WebAuthn) Login Implementation ---
+
+async function loginWithPasskey() {
+    const usernameInput = document.getElementById('username');
+    const username = usernameInput.value.trim();
+    
+    if (!username) {
+        const errorMsg = document.getElementById('error-message');
+        errorMsg.textContent = "❌ Please enter your username first to use a Passkey.";
+        errorMsg.classList.remove('d-none');
+        usernameInput.focus();
+        return;
+    }
+
+    const btn = document.getElementById('btn-passkey-login');
+    const originalText = btn.innerHTML;
+    
+    try {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+
+        // 1. Get authentication options from server
+        const resp = await fetch(`${API_BASE_URL}/api/passkey/login/begin`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
+            },
+            body: JSON.stringify({ username })
+        });
+
+        const options = await resp.json();
+        if (options.status === 'error') throw new Error(options.message);
+
+        // 2. Adjust options for navigator.credentials.get
+        options.challenge = bufferFromBase64Url(options.challenge);
+        if (options.allowCredentials) {
+            options.allowCredentials.forEach(cred => {
+                cred.id = bufferFromBase64Url(cred.id);
+            });
+        }
+
+        // 3. Get assertion
+        const assertion = await navigator.credentials.get({ publicKey: options });
+
+        // 4. Send back to server
+        const completeResp = await fetch(`${API_BASE_URL}/api/passkey/login/complete`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
+            },
+            body: JSON.stringify({
+                username,
+                credential: {
+                    id: assertion.id,
+                    rawId: base64UrlFromBuffer(assertion.rawId),
+                    response: {
+                        authenticatorData: base64UrlFromBuffer(assertion.response.authenticatorData),
+                        clientDataJSON: base64UrlFromBuffer(assertion.response.clientDataJSON),
+                        signature: base64UrlFromBuffer(assertion.response.signature),
+                        userHandle: assertion.response.userHandle ? base64UrlFromBuffer(assertion.response.userHandle) : null
+                    },
+                    type: assertion.type
+                }
+            })
+        });
+
+        const result = await completeResp.json();
+        if (result.status === 'success') {
+            // Success! Store user info and redirect
+            localStorage.setItem('off1_user', username);
+            localStorage.setItem('off1_token', result.token);
+            localStorage.setItem('off1_is_admin', result.is_admin);
+            localStorage.setItem('off1_is_owner', result.is_owner);
+            localStorage.setItem('off1_role_rank', result.role_rank);
+            localStorage.setItem('off1_email', result.email);
+            
+            window.location.href = 'index.html';
+        } else {
+            throw new Error(result.message);
+        }
+
+    } catch (err) {
+        console.error("Passkey Login Error:", err);
+        const errorMsg = document.getElementById('error-message');
+        errorMsg.textContent = `❌ ${err.message || "Passkey authentication failed."}`;
+        errorMsg.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// Reuse base64 helpers
+function base64UrlFromBuffer(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function bufferFromBase64Url(base64url) {
+    const padding = '='.repeat((4 - base64url.length % 4) % 4);
+    const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const binary = atob(base64);
+    const buffer = new ArrayBuffer(binary.length);
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return buffer;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const passkeyBtn = document.getElementById('btn-passkey-login');
+    if (passkeyBtn) {
+        passkeyBtn.addEventListener('click', loginWithPasskey);
     }
 });
