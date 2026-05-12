@@ -625,6 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const btnSupport = document.getElementById('btn-support');
     if (btnSupport && interstitialAd) {
         btnSupport.addEventListener('click', () => {
             showInterstitialAd();
