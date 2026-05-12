@@ -759,9 +759,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Settings Logic ---
     if (btnSettings && settingsModal) {
+        const passkeyListContainer = document.getElementById('passkey-list-container');
+        const pwChangeContainer = document.getElementById('password-change-container');
+        const btnShowPwChange = document.getElementById('btn-show-pw-change');
+        const btnConfirmPwChange = document.getElementById('btn-confirm-pw-change');
+        const btnChangeEmail = document.getElementById('btn-change-email');
+
+        async function refreshPasskeyList() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/passkey/list?username=${currentUser}`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                const keys = await res.json();
+                
+                if (keys.length > 0) {
+                    passkeyListContainer.classList.remove('hidden');
+                    passkeyListContainer.innerHTML = keys.map(key => `
+                        <div class="passkey-item">
+                            <div class="passkey-item-info">
+                                <strong>${key.name}</strong>
+                                <span>Used on: ${key.transports.join(', ') || 'Any device'}</span>
+                            </div>
+                            <button type="button" class="btn-remove-passkey" onclick="removePasskey(${key.id})" title="Remove Passkey">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    passkeyListContainer.classList.add('hidden');
+                }
+            } catch (e) { console.error("Failed to load passkeys", e); }
+        }
+
+        window.removePasskey = async (id) => {
+            if (!confirm("Are you sure you want to remove this Passkey? You won't be able to log in with this device until you re-add it.")) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/passkey/remove`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({ id, username: currentUser })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    refreshPasskeyList();
+                } else {
+                    alert("Error: " + data.message);
+                }
+            } catch (e) { console.error(e); }
+        };
+
         btnSettings.addEventListener('click', async () => {
             settingsModal.classList.remove('hidden');
-            // Fetch current settings
+            pwChangeContainer.classList.add('hidden'); // Hide password form by default
+            
             try {
                 const res = await fetch(`${API_BASE_URL}/api/settings?user_name=${currentUser}`, {
                     headers: { 'ngrok-skip-browser-warning': 'true' }
@@ -769,9 +819,61 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 document.getElementById('setting-ai-name').value = data.ai_name || 'Off1';
                 document.getElementById('setting-language').value = data.language || 'English';
-            } catch (e) {
-                console.error(e);
+                document.getElementById('setting-email').value = data.email || '';
+                
+                refreshPasskeyList();
+            } catch (e) { console.error(e); }
+        });
+
+        btnShowPwChange.addEventListener('click', () => {
+            pwChangeContainer.classList.toggle('hidden');
+        });
+
+        btnConfirmPwChange.addEventListener('click', async () => {
+            const old_password = document.getElementById('old-password').value;
+            const new_password = document.getElementById('new-password').value;
+            
+            if (!old_password || !new_password) {
+                alert("Please fill in both password fields.");
+                return;
             }
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/settings/change_password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({ username: currentUser, old_password, new_password })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alert("Password updated successfully!");
+                    pwChangeContainer.classList.add('hidden');
+                    document.getElementById('old-password').value = '';
+                    document.getElementById('new-password').value = '';
+                } else {
+                    alert("Error: " + data.message);
+                }
+            } catch (e) { alert("Failed to connect to server."); }
+        });
+
+        btnChangeEmail.addEventListener('click', async () => {
+            const newEmail = prompt("Enter your new email address:");
+            if (!newEmail || newEmail.trim() === "") return;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/settings/change_email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({ username: currentUser, new_email: newEmail })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    document.getElementById('setting-email').value = newEmail;
+                    alert("Email updated!");
+                } else {
+                    alert("Error: " + data.message);
+                }
+            } catch (e) { alert("Server error."); }
         });
 
         closeSettingsBtn.addEventListener('click', () => {
@@ -786,17 +888,11 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 await fetch(`${API_BASE_URL}/api/settings`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'ngrok-skip-browser-warning': 'true'
-                    },
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                     body: JSON.stringify({ user_name: currentUser, ai_name, language })
                 });
                 settingsModal.classList.add('hidden');
-                // Could notify user
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         });
     }
 
@@ -973,9 +1069,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const result = await completeResp.json();
             if (result.status === 'success') {
-                badge.innerText = 'Active';
-                badge.style.background = 'rgba(16, 185, 129, 0.2)';
                 alert("Passkey registered successfully! You can now log in using your device biometrics.");
+                // Trigger refresh if settings modal is open
+                const list = document.getElementById('passkey-list-container');
+                if (list) {
+                    // Logic to refresh list
+                    const res = await fetch(`${API_BASE_URL}/api/passkey/list?username=${username}`, {
+                        headers: { 'ngrok-skip-browser-warning': 'true' }
+                    });
+                    const keys = await res.json();
+                    list.classList.remove('hidden');
+                    list.innerHTML = keys.map(key => `
+                        <div class="passkey-item">
+                            <div class="passkey-item-info">
+                                <strong>${key.name}</strong>
+                                <span>Used on: ${key.transports.join(', ') || 'Any device'}</span>
+                            </div>
+                            <button type="button" class="btn-remove-passkey" onclick="removePasskey(${key.id})" title="Remove Passkey">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                }
             } else {
                 throw new Error(result.message);
             }

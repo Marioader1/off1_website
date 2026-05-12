@@ -1096,3 +1096,83 @@ select:focus-visible {
 .btn-passkey i {
     font-size: 0.9rem;
 }
+
+/* --- Settings Enhancements --- */
+.settings-nested-list {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    border: 1px solid var(--glass-border);
+}
+
+.passkey-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.passkey-item:last-child {
+    border-bottom: none;
+}
+
+.passkey-item-info {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.passkey-item-info span {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.btn-remove-passkey {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: 0.2s;
+}
+
+.btn-remove-passkey:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.settings-nested-form {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 0.8rem;
+    border: 1px solid var(--glass-border);
+}
+
+.settings-input-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.btn-icon-only {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-icon-only:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: rgba(100, 108, 255, 0.1);
+}
+
+.hidden {
+    display: none !important;
+}

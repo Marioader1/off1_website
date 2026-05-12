@@ -133,6 +133,17 @@
                             <option value="Arabic">Arabic</option>
                         </select>
                     </div>
+
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <h4>Email Address</h4>
+                            <p>Update your account email.</p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="email" id="setting-email" class="settings-input" style="width: 140px;" readonly>
+                            <button type="button" id="btn-change-email" class="btn-icon-only" title="Change Email"><i class="fas fa-edit"></i></button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Security Settings -->
@@ -143,12 +154,36 @@
                     
                     <div class="settings-row">
                         <div class="settings-info">
-                            <h4>Passkeys <span class="passkey-badge" id="passkey-status-badge">Not Setup</span></h4>
-                            <p>Use biometrics or hardware keys to log in securely.</p>
+                            <h4>Passkeys</h4>
+                            <p>Use biometrics or hardware keys.</p>
                         </div>
                         <button type="button" id="btn-setup-passkey" class="btn-passkey">
-                            <i class="fas fa-fingerprint"></i> Setup
+                            <i class="fas fa-fingerprint"></i> Add New
                         </button>
+                    </div>
+
+                    <!-- Passkey List Container -->
+                    <div id="passkey-list-container" class="settings-nested-list hidden">
+                        <!-- Populated via JS -->
+                    </div>
+
+                    <div class="settings-row" style="border-top: 1px solid var(--glass-border); padding-top: 1rem; margin-top: 0.5rem;">
+                        <div class="settings-info">
+                            <h4>Account Password</h4>
+                            <p>Update your system credentials.</p>
+                        </div>
+                        <button type="button" id="btn-show-pw-change" class="btn-passkey" style="background: rgba(255,255,255,0.05); border-color: var(--glass-border);">
+                            <i class="fas fa-key"></i> Change
+                        </button>
+                    </div>
+
+                    <!-- Password Change Form Container -->
+                    <div id="password-change-container" class="settings-nested-form hidden">
+                        <div class="settings-input-stack">
+                            <input type="password" id="old-password" placeholder="Current Password" class="settings-input w-100">
+                            <input type="password" id="new-password" placeholder="New Password" class="settings-input w-100">
+                            <button type="button" id="btn-confirm-pw-change" class="btn btn-primary w-100" style="margin-top: 0.5rem;">Confirm Change</button>
+                        </div>
                     </div>
                 </div>
 
