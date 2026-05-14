@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({ username: currentUser, token: token, auto_sync: true }) 
             });
-            if (res.status === 401) {
+            if (res.status === 401 || res.status === 403) {
                 localStorage.removeItem('off1_username');
                 localStorage.removeItem('off1_token');
                 window.location.href = 'login.html';
@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             clearTimeout(timeoutId);
 
-            if (response.status === 401) {
+            if (response.status === 401 || response.status === 403) {
                 alert("Your session has expired. Please log in again.");
                 localStorage.removeItem('off1_username');
                 localStorage.removeItem('off1_token');
@@ -674,7 +674,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch(`${API_BASE_URL}/api/dashboard?token=${localStorage.getItem('off1_token')}`, {
                     headers: { 'ngrok-skip-browser-warning': 'true' }
                 });
-                if (res.status === 401) {
+                if (res.status === 401 || res.status === 403) {
+                    console.warn("Dashboard Access Denied:", res.status);
                     window.location.href = 'login.html';
                     return;
                 }
