@@ -404,11 +404,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     text: userMessage,
                     user_name: currentUser,
+                    token: localStorage.getItem('off1_token'),
                     language: "English"
                 }),
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
+
+            if (response.status === 401) {
+                alert("Your session has expired. Please log in again.");
+                localStorage.removeItem('off1_username');
+                localStorage.removeItem('off1_token');
+                window.location.href = 'login.html';
+                return;
+            }
 
             const data = await response.json();
 
@@ -814,9 +823,13 @@ document.addEventListener('DOMContentLoaded', () => {
             pwChangeContainer.classList.add('hidden'); // Hide password form by default
             
             try {
-                const res = await fetch(`${API_BASE_URL}/api/settings?user_name=${currentUser}`, {
+                const res = await fetch(`${API_BASE_URL}/api/settings?user_name=${currentUser}&token=${localStorage.getItem('off1_token')}`, {
                     headers: { 'ngrok-skip-browser-warning': 'true' }
                 });
+                if (res.status === 401) {
+                    window.location.href = 'login.html';
+                    return;
+                }
                 const data = await res.json();
                 document.getElementById('setting-ai-name').value = data.ai_name || 'Off1';
                 document.getElementById('setting-language').value = data.language || 'English';
@@ -903,9 +916,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchAllHistory() {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/history?user_name=${currentUser}`, {
+            const res = await fetch(`${API_BASE_URL}/api/history?user_name=${currentUser}&token=${localStorage.getItem('off1_token')}`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
             });
+            if (res.status === 401) {
+                window.location.href = 'login.html';
+                return;
+            }
             const data = await res.json();
             if (data.history) {
                 fullHistoryData = data.history;
