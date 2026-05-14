@@ -323,7 +323,7 @@ async function loginWithPasskey() {
         const result = await completeResp.json();
         if (result.status === 'success') {
             // Success! Store user info and redirect
-            localStorage.setItem('off1_user', username);
+            localStorage.setItem('off1_username', username);
             localStorage.setItem('off1_token', result.token);
             localStorage.setItem('off1_is_admin', result.is_admin);
             localStorage.setItem('off1_is_owner', result.is_owner);
