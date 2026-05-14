@@ -694,7 +694,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 adminRefreshInterval = null;
             }
         });
-        });
 
         const runSpeedtestBtn = document.getElementById('run-speedtest-btn');
         const stStatus = document.getElementById('speedtest-status');
