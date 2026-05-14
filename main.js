@@ -17,8 +17,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`${API_BASE_URL}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-                body: JSON.stringify({ username: currentUser, auto_sync: true }) 
+                body: JSON.stringify({ username: currentUser, token: token, auto_sync: true }) 
             });
+            if (res.status === 401) {
+                localStorage.removeItem('off1_username');
+                localStorage.removeItem('off1_token');
+                window.location.href = 'login.html';
+                return;
+            }
             const data = await res.json();
             if (data.status === 'success') {
                 const oldRank = localStorage.getItem('off1_role_rank');
@@ -668,6 +674,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch(`${API_BASE_URL}/api/dashboard?admin_key=admin`, {
                     headers: { 'ngrok-skip-browser-warning': 'true' }
                 });
+                if (res.status === 401) {
+                    window.location.href = 'login.html';
+                    return;
+                }
                 const stats = await res.json();
                 document.getElementById('stat-uptime').textContent = stats.uptime || 'N/A';
                 document.getElementById('stat-requests').textContent = stats.requests || 0;
