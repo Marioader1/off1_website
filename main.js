@@ -670,8 +670,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function fetchAdminStats() {
             try {
-                // Fetch stats with admin_key (default is 'admin' as per server.pyw)
-                const res = await fetch(`${API_BASE_URL}/api/dashboard?admin_key=admin`, {
+                // Fetch stats with session token (backend will verify if user is admin)
+                const res = await fetch(`${API_BASE_URL}/api/dashboard?token=${localStorage.getItem('off1_token')}`, {
                     headers: { 'ngrok-skip-browser-warning': 'true' }
                 });
                 if (res.status === 401) {
