@@ -1,7 +1,8 @@
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:5000' 
+    : 'https://miasmatical-kellie-quartan.ngrok-free.dev';
+
 document.addEventListener('DOMContentLoaded', () => {
-    const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? 'http://localhost:5000' 
-        : 'https://miasmatical-kellie-quartan.ngrok-free.dev'; // Keep fallback for existing tunnel
     
     const loginForm = document.getElementById('login-form');
     const usernameInput = document.getElementById('username');
