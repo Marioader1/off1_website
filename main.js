@@ -660,24 +660,40 @@ document.addEventListener('DOMContentLoaded', () => {
         btnAdmin.classList.remove('d-none');
         btnAdmin.classList.remove('hidden');
 
-        btnAdmin.addEventListener('click', async () => {
-            adminModal.classList.remove('hidden');
+        let adminRefreshInterval = null;
+
+        async function fetchAdminStats() {
             try {
-                const res = await fetch(`${API_BASE_URL}/api/dashboard`, {
+                // Fetch stats with admin_key (default is 'admin' as per server.pyw)
+                const res = await fetch(`${API_BASE_URL}/api/dashboard?admin_key=admin`, {
                     headers: { 'ngrok-skip-browser-warning': 'true' }
                 });
                 const stats = await res.json();
-                document.getElementById('stat-uptime').textContent = stats.uptime;
-                document.getElementById('stat-requests').textContent = stats.requests;
-                document.getElementById('stat-cpu').textContent = stats.cpu + '%';
-                document.getElementById('stat-ram').textContent = stats.ram + '%';
+                document.getElementById('stat-uptime').textContent = stats.uptime || 'N/A';
+                document.getElementById('stat-requests').textContent = stats.requests || 0;
+                document.getElementById('stat-cpu').textContent = (stats.cpu || 0) + '%';
+                document.getElementById('stat-ram').textContent = (stats.ram || 0) + '%';
             } catch (e) {
-                console.error(e);
+                console.error("Dashboard fetch error:", e);
             }
+        }
+
+        btnAdmin.addEventListener('click', () => {
+            adminModal.classList.remove('hidden');
+            fetchAdminStats(); // Initial fetch
+            
+            // Set up 15s refresh interval
+            if (adminRefreshInterval) clearInterval(adminRefreshInterval);
+            adminRefreshInterval = setInterval(fetchAdminStats, 15000);
         });
 
         closeAdminBtn.addEventListener('click', () => {
             adminModal.classList.add('hidden');
+            if (adminRefreshInterval) {
+                clearInterval(adminRefreshInterval);
+                adminRefreshInterval = null;
+            }
+        });
         });
 
         const runSpeedtestBtn = document.getElementById('run-speedtest-btn');
