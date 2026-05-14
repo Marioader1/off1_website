@@ -1007,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Passkey (WebAuthn) Implementation ---
 
     async function setupPasskey() {
-        const username = localStorage.getItem('off1_user');
+        const username = localStorage.getItem('off1_username');
         if (!username) {
             alert("You must be logged in to setup a Passkey.");
             return;
