@@ -29,8 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let isLogin = true;
     let isVerifying = false;
 
-    // Redirect if already logged in
-    if (localStorage.getItem('off1_token')) {
+    // Redirect if already logged in (and not a Guest)
+    const token = localStorage.getItem('off1_token');
+    const username = localStorage.getItem('off1_username');
+    if (token && username && username !== 'Guest') {
         window.location.href = 'index.html';
     }
 

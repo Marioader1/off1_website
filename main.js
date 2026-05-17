@@ -16,6 +16,39 @@ document.addEventListener('DOMContentLoaded', () => {
         currentUser = 'Guest';
     }
 
+    // UI Elements (Declared at top to avoid hoisting / Temporal Dead Zone ReferenceErrors)
+    const displayUsername = document.getElementById('display-username');
+    const userInitial = document.getElementById('user-initials');
+    const emailStatus = document.getElementById('email-status');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    const btnAdmin = document.getElementById('btn-admin');
+    const adminModal = document.getElementById('admin-modal');
+    const closeAdminBtn = document.getElementById('close-admin-btn');
+
+    const btnSettings = document.getElementById('btn-settings');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    const settingsForm = document.getElementById('settings-form');
+
+    const btnHistory = document.getElementById('btn-history');
+    const historyModal = document.getElementById('history-modal');
+    const closeHistoryBtn = document.getElementById('close-history-btn');
+    const historySessionList = document.getElementById('history-session-list');
+
+    const busyModal = document.getElementById('busy-modal-overlay');
+    const busyWatchAdBtn = document.getElementById('busy-watch-ad');
+    const busyCloseBtn = document.getElementById('busy-close');
+
+    const runClientTestBtn = document.getElementById('run-client-test-btn');
+    const clientTestStatus = document.getElementById('client-test-status');
+    const clientTestResults = document.getElementById('client-test-results');
+
+    const chatForm = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+    const chatHistory = document.getElementById('chat-history');
+
+
     // Role Sync: Check server for latest admin/owner status in background
     async function syncUserRole() {
         try {
@@ -82,34 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Always update to latest to prevent repeated banners
     localStorage.setItem('off1_version', LATEST_VERSION);
 
-    const chatForm = document.getElementById('chat-form');
-    const userInput = document.getElementById('user-input');
-    const chatHistory = document.getElementById('chat-history');
 
-    // Modals & Buttons
-    const btnAdmin = document.getElementById('btn-admin');
-    const adminModal = document.getElementById('admin-modal');
-    const closeAdminBtn = document.getElementById('close-admin-btn');
-
-    const btnSettings = document.getElementById('btn-settings');
-    const settingsModal = document.getElementById('settings-modal');
-    const closeSettingsBtn = document.getElementById('close-settings-btn');
-    const settingsForm = document.getElementById('settings-form');
-
-    const btnHistory = document.getElementById('btn-history');
-    const historyModal = document.getElementById('history-modal');
-    const closeHistoryBtn = document.getElementById('close-history-btn');
-    const historySessionList = document.getElementById('history-session-list');
-
-    // Busy Modal
-    const busyModal = document.getElementById('busy-modal-overlay');
-    const busyWatchAdBtn = document.getElementById('busy-watch-ad');
-    const busyCloseBtn = document.getElementById('busy-close');
-
-    // Client Speed Test
-    const runClientTestBtn = document.getElementById('run-client-test-btn');
-    const clientTestStatus = document.getElementById('client-test-status');
-    const clientTestResults = document.getElementById('client-test-results');
 
     // Display username in UI if possible (optional)
     console.log(`Logged in as: ${currentUser}`);
@@ -146,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateGuestUI();
 
     // Logout/Login functionality
-    const logoutBtn = document.getElementById('logout-btn');
+
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             const currentU = localStorage.getItem('off1_username') || 'Guest';
