@@ -4,11 +4,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const API_BASE_URL = 'https://miasmatical-kellie-quartan.ngrok-free.dev';
 
     // Auth Check
-    const token = localStorage.getItem('off1_token');
-    const currentUser = localStorage.getItem('off1_username');
+    let token = localStorage.getItem('off1_token');
+    let currentUser = localStorage.getItem('off1_username');
     if (!token || !currentUser) {
-        window.location.href = 'login.html';
-        return;
+        localStorage.setItem('off1_username', 'Guest');
+        localStorage.setItem('off1_token', 'guest_session');
+        localStorage.setItem('off1_role_rank', '0');
+        localStorage.setItem('off1_is_admin', 'false');
+        localStorage.setItem('off1_is_owner', 'false');
+        token = 'guest_session';
+        currentUser = 'Guest';
     }
 
     // Role Sync: Check server for latest admin/owner status in background
@@ -20,9 +25,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ username: currentUser, token: token, auto_sync: true }) 
             });
             if (res.status === 401 || res.status === 403) {
-                localStorage.removeItem('off1_username');
-                localStorage.removeItem('off1_token');
-                window.location.href = 'login.html';
+                localStorage.setItem('off1_username', 'Guest');
+                localStorage.setItem('off1_token', 'guest_session');
+                localStorage.setItem('off1_role_rank', '0');
+                localStorage.setItem('off1_is_admin', 'false');
+                localStorage.setItem('off1_is_owner', 'false');
+                localStorage.removeItem('off1_email');
+                currentUser = 'Guest';
+                token = 'guest_session';
+                
+                if (btnSettings) btnSettings.style.display = 'none';
+                if (btnHistory) btnHistory.style.display = 'none';
+                if (btnAdmin) btnAdmin.style.display = 'none';
+                if (logoutBtn) {
+                    logoutBtn.querySelector('span').textContent = 'Login';
+                    logoutBtn.classList.remove('text-danger');
+                }
+                updateUserHeader();
                 return;
             }
             const data = await res.json();
@@ -95,23 +114,66 @@ document.addEventListener('DOMContentLoaded', () => {
     // Display username in UI if possible (optional)
     console.log(`Logged in as: ${currentUser}`);
 
-    if (currentUser === 'Guest') {
-        if (btnSettings) btnSettings.style.display = 'none';
-        if (btnHistory) btnHistory.style.display = 'none';
+    function updateGuestUI() {
+        const currentU = localStorage.getItem('off1_username') || 'Guest';
+        if (currentU === 'Guest') {
+            if (btnSettings) btnSettings.style.display = 'none';
+            if (btnHistory) btnHistory.style.display = 'none';
+            if (btnAdmin) btnAdmin.style.display = 'none';
+            if (logoutBtn) {
+                logoutBtn.querySelector('span').textContent = 'Login';
+                logoutBtn.classList.remove('text-danger');
+            }
+        } else {
+            if (btnSettings) btnSettings.style.display = '';
+            if (btnHistory) btnHistory.style.display = '';
+            const roleRank = parseInt(localStorage.getItem('off1_role_rank') || '0');
+            if (roleRank >= 1 && btnAdmin) {
+                btnAdmin.style.display = '';
+                btnAdmin.classList.remove('d-none');
+                btnAdmin.classList.remove('hidden');
+            } else {
+                if (btnAdmin) btnAdmin.style.display = 'none';
+            }
+            if (logoutBtn) {
+                logoutBtn.querySelector('span').textContent = 'Logout';
+                logoutBtn.classList.add('text-danger');
+            }
+        }
     }
+    updateGuestUI();
 
-    // Logout functionality
+    // Logout/Login functionality
     const logoutBtn = document.getElementById('logout-btn');
-    function performLogout() {
-        localStorage.removeItem('off1_token');
-        localStorage.removeItem('off1_username');
-        localStorage.removeItem('off1_is_admin');
-        localStorage.removeItem('off1_email');
-        window.location.href = 'login.html';
-    }
-
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', performLogout);
+        logoutBtn.addEventListener('click', () => {
+            const currentU = localStorage.getItem('off1_username') || 'Guest';
+            if (currentU === 'Guest') {
+                // Redirect to login page
+                window.location.href = 'login.html';
+            } else {
+                // Revert back to Guest mode without losing chat context
+                localStorage.setItem('off1_username', 'Guest');
+                localStorage.setItem('off1_token', 'guest_session');
+                localStorage.setItem('off1_role_rank', '0');
+                localStorage.setItem('off1_is_admin', 'false');
+                localStorage.setItem('off1_is_owner', 'false');
+                localStorage.removeItem('off1_email');
+                currentUser = 'Guest';
+                token = 'guest_session';
+                
+                // Hide modals
+                if (settingsModal) settingsModal.classList.add('hidden');
+                if (adminModal) adminModal.classList.add('hidden');
+                if (historyModal) historyModal.classList.add('hidden');
+                
+                updateGuestUI();
+                updateUserHeader();
+                
+                // Alert the user gently
+                alert("You have successfully logged out. Back in Guest mode!");
+            }
+        });
     }
 
     // Account Deletion Flow
@@ -201,41 +263,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // User Profile Initialization
-    const displayUsername = document.getElementById('display-username');
-    const userInitial = document.getElementById('user-initials');
-    const emailStatus = document.getElementById('email-status');
+    function updateUserHeader() {
+        const currentU = localStorage.getItem('off1_username') || 'Guest';
+        if (displayUsername && currentU) {
+            userInitial.textContent = currentU.charAt(0).toUpperCase();
+            
+            const userEmail = localStorage.getItem('off1_email');
+            const roleRank = parseInt(localStorage.getItem('off1_role_rank') || '0');
 
-    if (displayUsername && currentUser) {
-        userInitial.textContent = currentUser.charAt(0).toUpperCase();
-        
-        const userEmail = localStorage.getItem('off1_email');
-        const roleRank = parseInt(localStorage.getItem('off1_role_rank') || '0');
+            if (currentU === 'Guest') {
+                displayUsername.textContent = 'Guest';
+                emailStatus.textContent = '';
+            } else {
+                if (roleRank === 2) {
+                    displayUsername.innerHTML = `${currentU} <span class="owner-badge">OWNER ⭐</span>`;
+                } else if (roleRank === 1) {
+                    displayUsername.innerHTML = `${currentU} <span class="admin-badge">ADMIN 👑</span>`;
+                } else {
+                    displayUsername.textContent = currentU;
+                }
 
-        if (roleRank === 2) {
-            displayUsername.innerHTML = `${currentUser} <span class="owner-badge">OWNER ⭐</span>`;
-        } else if (roleRank === 1) {
-            displayUsername.innerHTML = `${currentUser} <span class="admin-badge">ADMIN 👑</span>`;
-        } else {
-            displayUsername.textContent = currentUser;
-        }
-
-        if (!userEmail || userEmail === '') {
-            emailStatus.innerHTML = '<span class="email-warning" id="setup-email-btn">Set up email</span>';
-            const setupBtn = document.getElementById('setup-email-btn');
-            if (setupBtn) {
-                setupBtn.addEventListener('click', () => {
-                    const newEmail = prompt('Please enter your email to secure your account and allow password resets:');
-                    if (newEmail && newEmail.includes('@')) {
-                        updateUserEmail(newEmail);
+                if (!userEmail || userEmail === '') {
+                    emailStatus.innerHTML = '<span class="email-warning" id="setup-email-btn">Set up email</span>';
+                    const setupBtn = document.getElementById('setup-email-btn');
+                    if (setupBtn) {
+                        setupBtn.addEventListener('click', () => {
+                            const newEmail = prompt('Please enter your email to secure your account and allow password resets:');
+                            if (newEmail && newEmail.includes('@')) {
+                                updateUserEmail(newEmail);
+                            }
+                        });
                     }
-                });
+                } else {
+                    emailStatus.textContent = 'Email Verified ✓';
+                    emailStatus.style.color = '#10b981';
+                }
             }
-        } else {
-            emailStatus.textContent = 'Email Verified ✓';
-            emailStatus.style.color = '#10b981';
         }
     }
+    updateUserHeader();
+
 
     async function updateUserEmail(email) {
         try {
@@ -425,10 +492,29 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(timeoutId);
 
             if (response.status === 401 || response.status === 403) {
-                alert("Your session has expired. Please log in again.");
-                localStorage.removeItem('off1_username');
-                localStorage.removeItem('off1_token');
-                window.location.href = 'login.html';
+                alert("Your session has expired. Transitioning to Guest mode.");
+                localStorage.setItem('off1_username', 'Guest');
+                localStorage.setItem('off1_token', 'guest_session');
+                localStorage.setItem('off1_role_rank', '0');
+                localStorage.setItem('off1_is_admin', 'false');
+                localStorage.setItem('off1_is_owner', 'false');
+                localStorage.removeItem('off1_email');
+                currentUser = 'Guest';
+                token = 'guest_session';
+                
+                if (btnSettings) btnSettings.style.display = 'none';
+                if (btnHistory) btnHistory.style.display = 'none';
+                if (btnAdmin) btnAdmin.style.display = 'none';
+                if (logoutBtn) {
+                    logoutBtn.querySelector('span').textContent = 'Login';
+                    logoutBtn.classList.remove('text-danger');
+                }
+                updateUserHeader();
+                
+                // Re-send or handle the message under Guest username
+                // Or just return so user can try sending again as Guest.
+                const loadingBubble = document.getElementById(loadingId);
+                if (loadingBubble) loadingBubble.remove();
                 return;
             }
 
@@ -683,7 +769,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 if (res.status === 401 || res.status === 403) {
                     console.warn("Dashboard Access Denied:", res.status);
-                    window.location.href = 'login.html';
+                    localStorage.setItem('off1_username', 'Guest');
+                    localStorage.setItem('off1_token', 'guest_session');
+                    localStorage.setItem('off1_role_rank', '0');
+                    localStorage.setItem('off1_is_admin', 'false');
+                    localStorage.setItem('off1_is_owner', 'false');
+                    localStorage.removeItem('off1_email');
+                    currentUser = 'Guest';
+                    token = 'guest_session';
+                    
+                    if (btnSettings) btnSettings.style.display = 'none';
+                    if (btnHistory) btnHistory.style.display = 'none';
+                    if (btnAdmin) btnAdmin.style.display = 'none';
+                    if (logoutBtn) {
+                        logoutBtn.querySelector('span').textContent = 'Login';
+                        logoutBtn.classList.remove('text-danger');
+                    }
+                    if (adminModal) adminModal.classList.add('hidden');
+                    updateUserHeader();
                     return;
                 }
                 const stats = await res.json();
