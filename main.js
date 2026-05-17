@@ -41,7 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) { console.warn("Role sync failed", e); }
     }
-    syncUserRole(); // Run silently in background
+    if (currentUser !== 'Guest') {
+        syncUserRole(); // Run silently in background
+    }
 
     // Update Notification & Version Logic
     const LATEST_VERSION = '0.7.0'; 
@@ -92,6 +94,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Display username in UI if possible (optional)
     console.log(`Logged in as: ${currentUser}`);
+
+    if (currentUser === 'Guest') {
+        if (btnSettings) btnSettings.style.display = 'none';
+        if (btnHistory) btnHistory.style.display = 'none';
+    }
 
     // Logout functionality
     const logoutBtn = document.getElementById('logout-btn');

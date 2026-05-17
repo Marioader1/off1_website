@@ -373,4 +373,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (passkeyBtn) {
         passkeyBtn.addEventListener('click', loginWithPasskey);
     }
+    
+    const guestBtn = document.getElementById('btn-guest-login');
+    if (guestBtn) {
+        guestBtn.addEventListener('click', () => {
+            localStorage.setItem('off1_username', 'Guest');
+            localStorage.setItem('off1_token', 'guest_session');
+            localStorage.setItem('off1_role_rank', '0');
+            localStorage.setItem('off1_is_admin', 'false');
+            localStorage.setItem('off1_is_owner', 'false');
+            window.location.href = 'index.html';
+        });
+    }
 });
