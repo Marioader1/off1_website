@@ -1145,6 +1145,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load history automatically on start (load today's chat if it exists)
     (async function initHistory() {
+        if (currentUser === 'Guest') return;
         await fetchAllHistory();
         const groups = groupHistoryByDate();
         const todayStr = new Date().toLocaleDateString();
