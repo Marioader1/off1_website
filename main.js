@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Update Notification & Version Logic
-    const LATEST_VERSION = '0.7.0'; 
+    const LATEST_VERSION = '0.8.0'; 
     const storedVersion = localStorage.getItem('off1_version');
     const updateBanner = document.getElementById('update-banner');
     const versionDisplay = document.getElementById('platform-version');
