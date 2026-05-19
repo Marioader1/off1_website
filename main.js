@@ -22,6 +22,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailStatus = document.getElementById('email-status');
     const logoutBtn = document.getElementById('logout-btn');
 
+    // New v0.8.0 Elements
+    const btnThemeToggle = document.getElementById('btn-theme-toggle');
+    const attachmentBtn = document.getElementById('attachment-btn');
+    const fileUploadInput = document.getElementById('file-upload-input');
+    const micBtn = document.getElementById('mic-btn');
+    const btnChangelog = document.getElementById('btn-changelog');
+    const changelogModal = document.getElementById('changelog-modal');
+    const btnCloseChangelog = document.getElementById('btn-close-changelog');
+    const privacyModal = document.getElementById('privacy-modal');
+    const btnAcceptPrivacy = document.getElementById('btn-accept-privacy');
+
+    // Policy Check
+    const POLICY_VERSION = "1.0";
+    if (localStorage.getItem('off1_policy_version') !== POLICY_VERSION) {
+        if (privacyModal) privacyModal.classList.remove('hidden');
+    }
+
+    // Theme Load
+    if (localStorage.getItem('off1_light_mode') === 'true') {
+        document.body.classList.add('light-mode');
+    }
+
     const btnAdmin = document.getElementById('btn-admin');
     const adminModal = document.getElementById('admin-modal');
     const closeAdminBtn = document.getElementById('close-admin-btn');
@@ -483,20 +505,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const timeoutId = setTimeout(() => controller.abort(), 180000);
 
         try {
+            const formData = new FormData();
+            formData.append('text', userMessage);
+            formData.append('user_name', currentUser);
+            formData.append('token', localStorage.getItem('off1_token') || 'guest_session');
+            formData.append('language', 'English');
+            
+            if (fileUploadInput && fileUploadInput.files.length > 0) {
+                formData.append('file', fileUploadInput.files[0]);
+            }
+
             const response = await fetch(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'ngrok-skip-browser-warning': 'true'
                 },
-                body: JSON.stringify({
-                    text: userMessage,
-                    user_name: currentUser,
-                    token: localStorage.getItem('off1_token'),
-                    language: "English"
-                }),
+                body: formData,
                 signal: controller.signal
             });
+            
+            // Clear the file input after sending
+            if (fileUploadInput) fileUploadInput.value = '';
             clearTimeout(timeoutId);
 
             if (response.status === 401 || response.status === 403) {
@@ -1291,6 +1320,82 @@ document.addEventListener('DOMContentLoaded', () => {
     const setupPasskeyBtn = document.getElementById('btn-setup-passkey');
     if (setupPasskeyBtn) {
         setupPasskeyBtn.onclick = setupPasskey;
+    }
+
+    // --- v0.8.0 Features Logic ---
+    if (btnThemeToggle) {
+        btnThemeToggle.onclick = () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('off1_light_mode', isLight);
+        };
+    }
+
+    if (attachmentBtn && fileUploadInput) {
+        attachmentBtn.onclick = () => fileUploadInput.click();
+        fileUploadInput.onchange = () => {
+            if (fileUploadInput.files.length > 0) {
+                attachmentBtn.style.color = 'var(--primary-color)';
+                userInput.placeholder = `Attached: ${fileUploadInput.files[0].name}`;
+            }
+        };
+    }
+
+    if (micBtn) {
+        let isRecording = false;
+        let mediaRecorder;
+        let audioChunks = [];
+
+        micBtn.onclick = async () => {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
+                    isRecording = true;
+                    micBtn.style.color = '#ef4444'; // Red for recording
+                    micBtn.classList.add('recording-pulse');
+                    userInput.placeholder = "Listening... Click mic to stop.";
+
+                    mediaRecorder.ondataavailable = e => {
+                        audioChunks.push(e.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        audioChunks = [];
+                        // Create a file from the blob and place it in the file upload input
+                        const audioFile = new File([audioBlob], "voice_recording.webm", { type: "audio/webm" });
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(audioFile);
+                        fileUploadInput.files = dataTransfer.files;
+                        
+                        micBtn.style.color = 'var(--text-secondary)';
+                        micBtn.classList.remove('recording-pulse');
+                        userInput.placeholder = "Voice recorded. Send to submit.";
+                        attachmentBtn.style.color = 'var(--primary-color)';
+                    };
+                } catch (err) {
+                    console.error("Microphone access denied or error:", err);
+                    alert("Microphone access is required for voice features.");
+                }
+            } else {
+                if (mediaRecorder) mediaRecorder.stop();
+                isRecording = false;
+            }
+        };
+    }
+
+    if (btnChangelog && changelogModal && btnCloseChangelog) {
+        btnChangelog.onclick = () => changelogModal.classList.remove('hidden');
+        btnCloseChangelog.onclick = () => changelogModal.classList.add('hidden');
+    }
+
+    if (btnAcceptPrivacy && privacyModal) {
+        btnAcceptPrivacy.onclick = () => {
+            localStorage.setItem('off1_policy_version', POLICY_VERSION);
+            privacyModal.classList.add('hidden');
+        };
     }
 
 });

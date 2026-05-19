@@ -1179,3 +1179,45 @@ select:focus-visible {
 .hidden {
     display: none !important;
 }
+
+/* --- LIGHT MODE OVERRIDES --- */
+body.light-mode {
+    --bg-color: #f8fafc;
+    --sidebar-bg: #ffffff;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --primary-color: #0284c7;
+    --primary-glow: rgba(2, 132, 199, 0.2);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --user-msg-bg: linear-gradient(135deg, #0ea5e9, #3b82f6);
+    --ai-msg-bg: #f1f5f9;
+}
+
+body.light-mode .ai-message .content {
+    color: var(--text-primary);
+}
+
+/* --- MEDIA BUTTONS --- */
+.media-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.media-btn:hover {
+    color: var(--primary-color);
+    background: var(--glass-border);
+}
+
+.media-btn svg {
+    width: 20px;
+    height: 20px;
+}
