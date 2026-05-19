@@ -408,10 +408,18 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const message = userInput.value.trim();
-        if (!message) return;
+        const hasFile = fileUploadInput && fileUploadInput.files.length > 0;
+        
+        if (!message && !hasFile) return;
+
+        let messageWithFile = message;
+        if (hasFile) {
+            const filename = fileUploadInput.files[0].name;
+            messageWithFile += (messageWithFile ? '\n' : '') + `[User uploaded a file: ${filename}]`;
+        }
 
         // 1. Add user message to UI
-        appendMessage('user', message);
+        appendMessage('user', messageWithFile);
 
         // Clear input
         userInput.value = '';
@@ -424,17 +432,37 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
 
+        // Extract attachment information if any
+        let filename = null;
+        let cleanedText = text || '';
+
+        // Pattern 1: [User uploaded a file: filename]
+        const uploadRegex = /\[User uploaded a file:\s*([^\]]+)\]/i;
+        const uploadMatch = cleanedText.match(uploadRegex);
+        if (uploadMatch) {
+            filename = uploadMatch[1].trim();
+            cleanedText = cleanedText.replace(uploadRegex, '').trim();
+        }
+
+        // Pattern 2: | Attached: filename or Attached: filename
+        const attachRegex = /(?:^|\n)(?:\|\s*)?Attached:\s*([^\n]+)/i;
+        const attachMatch = cleanedText.match(attachRegex);
+        if (attachMatch) {
+            if (!filename) filename = attachMatch[1].trim();
+            cleanedText = cleanedText.replace(attachRegex, '').trim();
+        }
+
         if (sender === 'user') {
             messageDiv.classList.add('user-message');
             messageDiv.innerHTML = `
                 <div class="avatar">U</div>
-                <div class="content">${escapeHTML(text)}</div>
+                <div class="content">${escapeHTML(cleanedText).replace(/\n/g, '<br>')}</div>
             `;
         } else {
             messageDiv.classList.add('ai-message');
             
             // Check for safety warning trigger (or if forced from prompt)
-            const needsWarning = forceWarning || checkSafety(text);
+            const needsWarning = forceWarning || checkSafety(cleanedText);
             let warningHtml = '';
             
             if (needsWarning) {
@@ -457,9 +485,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="avatar">O</div>
                 <div class="content">
                     ${warningHtml}
-                    ${escapeHTML(text).replace(/\n/g, '<br>')}
+                    ${escapeHTML(cleanedText).replace(/\n/g, '<br>')}
                 </div>
             `;
+        }
+
+        // If filename is extracted, create beautiful attachment card
+        if (filename) {
+            const contentDiv = messageDiv.querySelector('.content');
+            if (contentDiv) {
+                const isImage = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(filename);
+                const ext = filename.split('.').pop().toLowerCase();
+                
+                let faIcon = 'fa-file';
+                let iconClass = 'default';
+                
+                if (['xlsx', 'xls', 'csv'].includes(ext)) {
+                    faIcon = 'fa-file-excel';
+                    iconClass = 'excel';
+                } else if (ext === 'pdf') {
+                    faIcon = 'fa-file-pdf';
+                    iconClass = 'pdf';
+                } else if (['docx', 'doc', 'txt', 'rtf'].includes(ext)) {
+                    faIcon = 'fa-file-word';
+                    iconClass = 'word';
+                } else if (['mp3', 'wav', 'ogg', 'm4a', 'webm'].includes(ext)) {
+                    faIcon = 'fa-file-audio';
+                    iconClass = 'audio';
+                } else if (['pptx', 'ppt'].includes(ext)) {
+                    faIcon = 'fa-file-powerpoint';
+                    iconClass = 'document';
+                }
+
+                const cardUrl = `${API_BASE_URL}/api/uploads/${encodeURIComponent(filename)}`;
+                const card = document.createElement('div');
+                card.className = `attachment-card ${isImage ? 'image-card' : 'file-card'}`;
+                
+                if (isImage) {
+                    card.style.backgroundImage = `url('${cardUrl}')`;
+                    card.innerHTML = `<div class="file-name">${escapeHTML(filename)}</div>`;
+                } else {
+                    card.innerHTML = `
+                        <i class="fas ${faIcon} file-icon ${iconClass}"></i>
+                        <div class="file-name">${escapeHTML(filename)}</div>
+                    `;
+                }
+                
+                card.onclick = () => window.open(cardUrl, '_blank');
+                
+                const wrapper = document.createElement('div');
+                wrapper.style.marginTop = cleanedText ? '0.75rem' : '0';
+                wrapper.appendChild(card);
+                contentDiv.appendChild(wrapper);
+            }
         }
 
         chatHistory.appendChild(messageDiv);
@@ -515,6 +593,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append('file', fileUploadInput.files[0]);
             }
 
+            // Visually clear immediately so it feels fast
+            clearAttachment();
+
             const response = await fetch(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
                 headers: {
@@ -524,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 signal: controller.signal
             });
             
-            // Clear the file input after sending
+            // Clear the file input after sending (backup safety)
             if (fileUploadInput) fileUploadInput.value = '';
             clearTimeout(timeoutId);
 
@@ -1331,14 +1412,88 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    const previewArea = document.getElementById('attachment-preview-area');
+
+    function updateAttachmentPreview() {
+        if (!previewArea) return;
+        previewArea.innerHTML = '';
+        
+        if (fileUploadInput && fileUploadInput.files.length > 0) {
+            const file = fileUploadInput.files[0];
+            previewArea.classList.remove('hidden');
+            
+            const isImage = file.type.startsWith('image/');
+            const ext = file.name.split('.').pop().toLowerCase();
+            
+            let faIcon = 'fa-file';
+            let iconClass = 'default';
+            if (['xlsx', 'xls', 'csv'].includes(ext)) {
+                faIcon = 'fa-file-excel';
+                iconClass = 'excel';
+            } else if (ext === 'pdf') {
+                faIcon = 'fa-file-pdf';
+                iconClass = 'pdf';
+            } else if (['docx', 'doc', 'txt', 'rtf'].includes(ext)) {
+                faIcon = 'fa-file-word';
+                iconClass = 'word';
+            } else if (['mp3', 'wav', 'ogg', 'm4a', 'webm'].includes(ext)) {
+                faIcon = 'fa-file-audio';
+                iconClass = 'audio';
+            } else if (['pptx', 'ppt'].includes(ext)) {
+                faIcon = 'fa-file-powerpoint';
+                iconClass = 'document';
+            }
+
+            const card = document.createElement('div');
+            card.className = `attachment-card ${isImage ? 'image-card' : 'file-card'}`;
+            
+            if (isImage) {
+                const objectUrl = URL.createObjectURL(file);
+                card.style.backgroundImage = `url('${objectUrl}')`;
+                card.dataset.objectUrl = objectUrl;
+                card.innerHTML = `
+                    <button type="button" class="delete-btn" title="Remove attachment">&times;</button>
+                    <div class="file-name">${escapeHTML(file.name)}</div>
+                `;
+            } else {
+                card.innerHTML = `
+                    <button type="button" class="delete-btn" title="Remove attachment">&times;</button>
+                    <i class="fas ${faIcon} file-icon ${iconClass}"></i>
+                    <div class="file-name">${escapeHTML(file.name)}</div>
+                `;
+            }
+            
+            const deleteBtn = card.querySelector('.delete-btn');
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                clearAttachment();
+            };
+
+            previewArea.appendChild(card);
+            
+            if (attachmentBtn) attachmentBtn.style.color = 'var(--primary-color)';
+            userInput.placeholder = "Press send to upload...";
+        } else {
+            previewArea.classList.add('hidden');
+            if (attachmentBtn) attachmentBtn.style.color = 'var(--text-secondary)';
+            userInput.placeholder = "Message Off1...";
+        }
+    }
+
+    function clearAttachment() {
+        if (fileUploadInput) {
+            const card = previewArea ? previewArea.querySelector('.attachment-card') : null;
+            if (card && card.dataset.objectUrl) {
+                URL.revokeObjectURL(card.dataset.objectUrl);
+            }
+            fileUploadInput.value = '';
+        }
+        updateAttachmentPreview();
+    }
+
     if (attachmentBtn && fileUploadInput) {
         attachmentBtn.onclick = () => fileUploadInput.click();
-        fileUploadInput.onchange = () => {
-            if (fileUploadInput.files.length > 0) {
-                attachmentBtn.style.color = 'var(--primary-color)';
-                userInput.placeholder = `Attached: ${fileUploadInput.files[0].name}`;
-            }
-        };
+        fileUploadInput.onchange = updateAttachmentPreview;
     }
 
     if (micBtn) {
@@ -1370,10 +1525,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         dataTransfer.items.add(audioFile);
                         fileUploadInput.files = dataTransfer.files;
                         
+                        updateAttachmentPreview();
+                        
                         micBtn.style.color = 'var(--text-secondary)';
                         micBtn.classList.remove('recording-pulse');
-                        userInput.placeholder = "Voice recorded. Send to submit.";
-                        attachmentBtn.style.color = 'var(--primary-color)';
                     };
                 } catch (err) {
                     console.error("Microphone access denied or error:", err);

@@ -1221,3 +1221,129 @@ body.light-mode .ai-message .content {
     width: 20px;
     height: 20px;
 }
+
+/* --- ATTACHMENT CARD & PREVIEW SYSTEM --- */
+#attachment-preview-area {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scrollbar-width: thin;
+}
+#attachment-preview-area.hidden {
+    display: none;
+}
+
+/* Base class for preview & rendered message cards */
+.attachment-card {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 20px;
+    background: rgba(22, 27, 34, 0.6);
+    border: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0.75rem;
+    box-sizing: border-box;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .attachment-card {
+    background: rgba(241, 245, 249, 0.8);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.attachment-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary-color);
+    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.25);
+}
+
+/* Image attachment style */
+.attachment-card.image-card {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.attachment-card.image-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.75) 100%);
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* Icon / Non-image attachment style */
+.attachment-card.file-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.attachment-card .file-icon {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-size: 1.5rem;
+    z-index: 2;
+}
+
+/* Icon specific colors */
+.attachment-card .file-icon.excel { color: #10b981; } /* Green */
+.attachment-card .file-icon.pdf { color: #ef4444; } /* Red */
+.attachment-card .file-icon.word { color: #3b82f6; } /* Blue */
+.attachment-card .file-icon.audio { color: #a855f7; } /* Purple */
+.attachment-card .file-icon.document { color: #f59e0b; } /* Orange */
+.attachment-card .file-icon.default { color: #8b949e; } /* Gray */
+
+.attachment-card .file-name {
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    width: 100%;
+    z-index: 2;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+body.light-mode .attachment-card.file-card .file-name {
+    color: var(--text-primary);
+    text-shadow: none;
+}
+
+/* Delete / Clear button on preview card */
+.attachment-card .delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    z-index: 5;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.attachment-card .delete-btn:hover {
+    background: #ef4444;
+    transform: scale(1.1);
+}
