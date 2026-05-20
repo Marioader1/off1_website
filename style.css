@@ -950,6 +950,37 @@ select:focus-visible {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Pwned Warning Banner */
+.pwned-warning-banner {
+    background: rgba(239, 68, 68, 0.15);
+    border: 2px solid rgba(239, 68, 68, 0.4);
+    border-left: 6px solid #ef4444;
+    color: #fee2e2;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    animation: slideInDown 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.15);
+}
+
+.pwned-warning-banner svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5));
+}
+
+.pwned-warning-banner b {
+    color: #ffffff;
+    display: block;
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+}
+
 /* --- Premium Settings & Modal Overhaul --- */
 .modal-overlay {
     position: fixed;
@@ -1347,3 +1378,156 @@ body.light-mode .attachment-card.file-card .file-name {
     background: #ef4444;
     transform: scale(1.1);
 }
+
+/* Password Requirements Premium Visuals */
+.password-requirements {
+    margin-top: 0.8rem;
+    padding: 0.8rem;
+    background: rgba(13, 17, 23, 0.45);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    pointer-events: none;
+    backdrop-filter: blur(8px);
+}
+
+.password-requirements.visible {
+    opacity: 1;
+    max-height: 250px;
+    pointer-events: auto;
+    margin-bottom: 0.8rem;
+}
+
+.strength-bar-container {
+    height: 4px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    margin-bottom: 0.8rem;
+    overflow: hidden;
+}
+
+.strength-bar {
+    height: 100%;
+    width: 0%;
+    background: #ef4444;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s ease;
+    border-radius: 2px;
+}
+
+.requirements-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+}
+
+@media (min-width: 380px) {
+    .requirements-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.requirement-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    transition: all 0.3s ease;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.requirement-item i {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.requirement-item.met {
+    color: #10b981;
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
+}
+
+.requirement-item.met i {
+    transform: scale(1.1);
+}
+
+/* Pwned Warning Banner Premium Styling */
+.pwned-warning-banner {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(153, 27, 27, 0.35));
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin: 0.5rem 0 1rem 0;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.15), inset 0 0 12px rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pwned-warning-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #ef4444;
+    box-shadow: 0 0 15px #ef4444;
+}
+
+.pwned-warning-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffffff;
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+}
+
+.pwned-warning-header i {
+    font-size: 1.35rem;
+    color: #ef4444;
+    animation: pulseGlow 2s infinite ease-in-out;
+}
+
+.pwned-warning-body {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: #fecaca;
+    font-weight: 500;
+    white-space: pre-line;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.6));
+    }
+    50% {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.9));
+    }
+}
+

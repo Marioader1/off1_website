@@ -26,6 +26,18 @@
                 <div>
                     <label for="password">Password</label>
                     <input type="password" id="password" class="login-input" placeholder="Enter password" required autocomplete="current-password">
+                    <div class="password-requirements hidden" id="register-password-requirements">
+                        <div class="strength-bar-container">
+                            <div class="strength-bar" id="register-strength-bar"></div>
+                        </div>
+                        <div class="requirements-grid">
+                            <div class="requirement-item" id="req-length"><i class="far fa-circle"></i> 8+ Characters</div>
+                            <div class="requirement-item" id="req-upper"><i class="far fa-circle"></i> 1 Uppercase</div>
+                            <div class="requirement-item" id="req-lower"><i class="far fa-circle"></i> 1 Lowercase</div>
+                            <div class="requirement-item" id="req-number"><i class="far fa-circle"></i> 1 Number</div>
+                            <div class="requirement-item" id="req-special"><i class="far fa-circle"></i> 1 Special (!@#$)</div>
+                        </div>
+                    </div>
                 </div>
                 <div id="verification-field" class="d-none">
                     <label for="verification-code">Verification Code</label>

@@ -1,7 +1,261 @@
 document.addEventListener('DOMContentLoaded', () => {
     // 🌐 Configuration: Change this to your ngrok URL for external testing
-    // Example: const API_BASE_URL = 'https://your-ngrok-url.ngrok-free.app';
-    const API_BASE_URL = 'https://miasmatical-kellie-quartan.ngrok-free.dev';
+    const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:5000'
+        : (window.location.hostname.endsWith('github.io')
+            ? 'https://miasmatical-kellie-quartan.ngrok-free.dev'
+            : window.location.origin);
+
+    // =========================================================================
+    // 🛠️ SYSTEM MAINTENANCE MODE CONTROLLER & INTERCEPTOR
+    // =========================================================================
+    // Dynamic styles for animations
+    if (!document.getElementById('maintenance-styles')) {
+        const style = document.createElement('style');
+        style.id = 'maintenance-styles';
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); opacity: 0.9; }
+                50% { transform: scale(1.03); opacity: 1; filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.6)); }
+                100% { transform: scale(1); opacity: 0.9; }
+            }
+            @keyframes glow {
+                0% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.4), inset 0 0 4px rgba(245, 158, 11, 0.2); }
+                50% { box-shadow: 0 0 16px rgba(245, 158, 11, 0.7), inset 0 0 8px rgba(245, 158, 11, 0.3); border-color: rgba(245, 158, 11, 0.8); }
+                100% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.4), inset 0 0 4px rgba(245, 158, 11, 0.2); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function showToast(message, type = 'info') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 100000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            padding: 12px 24px;
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #fff;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border: 1px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : 'rgba(255, 255, 255, 0.1)'};
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        `;
+        toast.innerHTML = `${type === 'success' ? '🟢' : type === 'error' ? '🔴' : 'ℹ️'} ${message}`;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        }, 10);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3500);
+    }
+
+    function showMaintenanceOverlay() {
+        if (document.getElementById('maintenance-overlay')) return;
+        const overlay = document.createElement('div');
+        overlay.id = 'maintenance-overlay';
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(10, 10, 10, 0.75); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            z-index: 99999; display: flex; align-items: center; justify-content: center;
+            font-family: 'Inter', sans-serif; color: #fff; text-align: center;
+            opacity: 0; transition: opacity 0.5s ease;
+        `;
+        overlay.innerHTML = `
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.12); padding: 40px; border-radius: 24px; box-shadow: 0 24px 60px rgba(0,0,0,0.65); max-width: 500px; width: 90%; transform: translateY(20px); transition: all 0.5s ease;">
+                <div style="font-size: 72px; margin-bottom: 24px; animation: pulse 2s infinite; display: inline-block;">🛠️</div>
+                <h1 style="font-size: 30px; font-weight: 700; margin-top: 0; margin-bottom: 16px; background: linear-gradient(135deg, #f59e0b, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">System Under Maintenance</h1>
+                <p style="font-size: 15px; color: rgba(255, 255, 255, 0.65); line-height: 1.6; margin-bottom: 30px;">
+                    We are currently executing essential backend maintenance. Standard operations have been temporarily suspended to ensure data consistency and system integrity.
+                </p>
+                <div style="font-size: 13px; color: rgba(255, 255, 255, 0.35); border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 20px;">
+                    Authorized team member? <a href="login.html" style="color: #f59e0b; text-decoration: none; font-weight: 600; border-bottom: 1px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderBottom='1px solid #f59e0b'" onmouseout="this.style.borderBottom='1px solid transparent'">Access Login portal</a>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+            overlay.querySelector('div').style.transform = 'translateY(0)';
+        }, 50);
+    }
+
+    function hideMaintenanceOverlay() {
+        const overlay = document.getElementById('maintenance-overlay');
+        if (overlay) {
+            overlay.style.opacity = '0';
+            overlay.querySelector('div').style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                overlay.remove();
+                document.body.style.overflow = '';
+            }, 500);
+        }
+    }
+
+    function showAdminMaintenanceBadge() {
+        if (document.getElementById('maintenance-badge')) return;
+        const badge = document.createElement('div');
+        badge.id = 'maintenance-badge';
+        badge.style.cssText = `
+            position: fixed; bottom: 20px; left: 20px; z-index: 9999;
+            background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            color: #f59e0b; padding: 10px 18px; border-radius: 50px;
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; gap: 8px;
+            animation: glow 2s infinite; cursor: help;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            transition: all 0.3s ease;
+        `;
+        badge.title = "You are currently accessing the platform under Maintenance Mode Bypass. Some live changes might be in progress.";
+        badge.innerHTML = `
+            <span style="display: inline-block; width: 8px; height: 8px; background-color: #f59e0b; border-radius: 50%; box-shadow: 0 0 8px #f59e0b;"></span>
+            🛠️ Admin: Maintenance Bypass
+        `;
+        document.body.appendChild(badge);
+    }
+
+    function hideAdminMaintenanceBadge() {
+        const badge = document.getElementById('maintenance-badge');
+        if (badge) badge.remove();
+    }
+
+    // Intercept all fetch requests globally
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+        try {
+            const response = await originalFetch(...args);
+            if (response.status === 503) {
+                const clone = response.clone();
+                try {
+                    const data = await clone.json();
+                    if (data && data.error_type === 'maintenance') {
+                        const is_admin = localStorage.getItem('off1_is_admin') === 'true';
+                        const is_owner = localStorage.getItem('off1_is_owner') === 'true';
+                        const role_rank = parseInt(localStorage.getItem('off1_role_rank') || '0', 10);
+                        if (!(is_admin || is_owner || role_rank >= 1)) {
+                            showMaintenanceOverlay();
+                        }
+                    }
+                } catch(e) {}
+            }
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    // Sequential keyboard shortcut tracker for Ctrl + Shift + M, A, T
+    let shortcutSequence = [];
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey) {
+            const key = e.key.toLowerCase();
+            if (key === 'm' || key === 'a' || key === 't') {
+                if (key === 'm') {
+                    shortcutSequence = ['m'];
+                } else if (key === 'a' && shortcutSequence[0] === 'm' && shortcutSequence.length === 1) {
+                    shortcutSequence.push('a');
+                } else if (key === 't' && shortcutSequence[0] === 'm' && shortcutSequence[1] === 'a' && shortcutSequence.length === 2) {
+                    shortcutSequence = [];
+                    toggleMaintenanceMode();
+                } else {
+                    shortcutSequence = [];
+                }
+            } else {
+                shortcutSequence = [];
+            }
+        } else {
+            shortcutSequence = [];
+        }
+    });
+
+    async function toggleMaintenanceMode() {
+        const token = localStorage.getItem('off1_token');
+        try {
+            const res = await originalFetch(`${API_BASE_URL}/api/toggle_maintenance`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Token': token || ''
+                },
+                body: JSON.stringify({ token: token || '' })
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                showToast(`System Maintenance: ${data.maintenance_mode ? 'ENABLED' : 'DISABLED'}`, 'success');
+                checkMaintenanceStatus();
+            } else {
+                showToast(data.message || 'Failed to toggle maintenance mode.', 'error');
+            }
+        } catch (err) {
+            console.error('Error toggling maintenance mode:', err);
+            showToast('Network error while toggling maintenance mode.', 'error');
+        }
+    }
+
+    async function checkMaintenanceStatus() {
+        try {
+            const res = await originalFetch(`${API_BASE_URL}/api/status`);
+            if (!res.ok) {
+                showMaintenanceOverlay();
+                hideAdminMaintenanceBadge();
+                return;
+            }
+            const data = await res.json();
+            if (data.maintenance_mode) {
+                const is_admin = localStorage.getItem('off1_is_admin') === 'true';
+                const is_owner = localStorage.getItem('off1_is_owner') === 'true';
+                const role_rank = parseInt(localStorage.getItem('off1_role_rank') || '0', 10);
+                
+                if (is_admin || is_owner || role_rank >= 1) {
+                    showAdminMaintenanceBadge();
+                    hideMaintenanceOverlay();
+                } else {
+                    showMaintenanceOverlay();
+                    hideAdminMaintenanceBadge();
+                }
+            } else {
+                hideMaintenanceOverlay();
+                hideAdminMaintenanceBadge();
+            }
+        } catch (err) {
+            console.error('Error checking maintenance status:', err);
+            showMaintenanceOverlay();
+            hideAdminMaintenanceBadge();
+        }
+    }
+
+    // Initial check and periodic poll (every 15s)
+    checkMaintenanceStatus();
+    setInterval(checkMaintenanceStatus, 15000);
+
+    let selectedFiles = [];
 
     // Auth Check
     let token = localStorage.getItem('off1_token');
@@ -71,6 +325,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatHistory = document.getElementById('chat-history');
 
 
+    function checkAndShowPwnedWarning() {
+        const container = document.getElementById('pwned-warning-container');
+        if (!container) return;
+        
+        const username = localStorage.getItem('off1_username');
+        if (username === 'Guest') {
+            container.innerHTML = '';
+            container.classList.add('hidden');
+            return;
+        }
+
+        const count = parseInt(localStorage.getItem('off1_pwned_count') || '0');
+        if (count > 0) {
+            container.innerHTML = `
+                <div class="pwned-warning-banner">
+                    <div class="pwned-warning-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>This password has been seen ${count} times before in data breaches!</span>
+                    </div>
+                    <div class="pwned-warning-body">This password has previously appeared in a data breach and should never be used. If you've ever used it anywhere before, change it immediately!</div>
+                </div>
+            `;
+            container.classList.remove('hidden');
+        } else {
+            container.innerHTML = '';
+            container.classList.add('hidden');
+        }
+    }
+
     // Role Sync: Check server for latest admin/owner status in background
     async function syncUserRole() {
         try {
@@ -85,6 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('off1_role_rank', '0');
                 localStorage.setItem('off1_is_admin', 'false');
                 localStorage.setItem('off1_is_owner', 'false');
+                localStorage.setItem('off1_pwned_count', '0');
                 localStorage.removeItem('off1_email');
                 currentUser = 'Guest';
                 token = 'guest_session';
@@ -97,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     logoutBtn.classList.remove('text-danger');
                 }
                 updateUserHeader();
+                checkAndShowPwnedWarning();
                 return;
             }
             const data = await res.json();
@@ -107,6 +392,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('off1_is_owner', data.is_owner || false);
                 localStorage.setItem('off1_role_rank', data.role_rank || 0);
                 localStorage.setItem('off1_email', data.email || '');
+                localStorage.setItem('off1_pwned_count', data.pwned_count || 0);
+
+                checkAndShowPwnedWarning();
 
                 // If rank changed, reload to unlock the UI
                 if (String(data.role_rank) !== oldRank) {
@@ -120,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Update Notification & Version Logic
-    const LATEST_VERSION = '0.8.0'; 
+    const LATEST_VERSION = '0.8.1'; 
     const storedVersion = localStorage.getItem('off1_version');
     const updateBanner = document.getElementById('update-banner');
     const versionDisplay = document.getElementById('platform-version');
@@ -172,6 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     updateGuestUI();
+    checkAndShowPwnedWarning();
 
     // Logout/Login functionality
 
@@ -188,6 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('off1_role_rank', '0');
                 localStorage.setItem('off1_is_admin', 'false');
                 localStorage.setItem('off1_is_owner', 'false');
+                localStorage.setItem('off1_pwned_count', '0');
                 localStorage.removeItem('off1_email');
                 currentUser = 'Guest';
                 token = 'guest_session';
@@ -198,6 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (historyModal) historyModal.classList.add('hidden');
                 
                 updateGuestUI();
+                checkAndShowPwnedWarning();
                 updateUserHeader();
                 
                 // Alert the user gently
@@ -408,14 +699,15 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const message = userInput.value.trim();
-        const hasFile = fileUploadInput && fileUploadInput.files.length > 0;
+        const hasFile = selectedFiles && selectedFiles.length > 0;
         
         if (!message && !hasFile) return;
 
         let messageWithFile = message;
         if (hasFile) {
-            const filename = fileUploadInput.files[0].name;
-            messageWithFile += (messageWithFile ? '\n' : '') + `[User uploaded a file: ${filename}]`;
+            selectedFiles.forEach(file => {
+                messageWithFile += (messageWithFile ? '\n' : '') + `[User uploaded a file: ${file.name}]`;
+            });
         }
 
         // 1. Add user message to UI
@@ -432,25 +724,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
 
-        // Extract attachment information if any
-        let filename = null;
         let cleanedText = text || '';
+        let filenames = [];
 
-        // Pattern 1: [User uploaded a file: filename]
-        const uploadRegex = /\[User uploaded a file:\s*([^\]]+)\]/i;
-        const uploadMatch = cleanedText.match(uploadRegex);
-        if (uploadMatch) {
-            filename = uploadMatch[1].trim();
-            cleanedText = cleanedText.replace(uploadRegex, '').trim();
+        // Pattern 1: [User uploaded a file: filename] (global)
+        const uploadRegex = /\[User uploaded a file:\s*([^\]]+)\]/gi;
+        let match;
+        while ((match = uploadRegex.exec(cleanedText)) !== null) {
+            filenames.push(match[1].trim());
         }
+        cleanedText = cleanedText.replace(uploadRegex, '').trim();
 
         // Pattern 2: | Attached: filename or Attached: filename
-        const attachRegex = /(?:^|\n)(?:\|\s*)?Attached:\s*([^\n]+)/i;
-        const attachMatch = cleanedText.match(attachRegex);
-        if (attachMatch) {
-            if (!filename) filename = attachMatch[1].trim();
-            cleanedText = cleanedText.replace(attachRegex, '').trim();
+        const attachRegex = /(?:^|\n)(?:\|\s*)?Attached:\s*([^\n]+)/gi;
+        while ((match = attachRegex.exec(cleanedText)) !== null) {
+            filenames.push(match[1].trim());
         }
+        cleanedText = cleanedText.replace(attachRegex, '').trim();
 
         if (sender === 'user') {
             messageDiv.classList.add('user-message');
@@ -490,53 +780,63 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        // If filename is extracted, create beautiful attachment card
-        if (filename) {
+        // If filenames are extracted, create beautiful responsive wrapping grid
+        if (filenames.length > 0) {
             const contentDiv = messageDiv.querySelector('.content');
             if (contentDiv) {
-                const isImage = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(filename);
-                const ext = filename.split('.').pop().toLowerCase();
-                
-                let faIcon = 'fa-file';
-                let iconClass = 'default';
-                
-                if (['xlsx', 'xls', 'csv'].includes(ext)) {
-                    faIcon = 'fa-file-excel';
-                    iconClass = 'excel';
-                } else if (ext === 'pdf') {
-                    faIcon = 'fa-file-pdf';
-                    iconClass = 'pdf';
-                } else if (['docx', 'doc', 'txt', 'rtf'].includes(ext)) {
-                    faIcon = 'fa-file-word';
-                    iconClass = 'word';
-                } else if (['mp3', 'wav', 'ogg', 'm4a', 'webm'].includes(ext)) {
-                    faIcon = 'fa-file-audio';
-                    iconClass = 'audio';
-                } else if (['pptx', 'ppt'].includes(ext)) {
-                    faIcon = 'fa-file-powerpoint';
-                    iconClass = 'document';
-                }
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'bubble-attachments-container';
+                gridContainer.style.display = 'flex';
+                gridContainer.style.flexWrap = 'wrap';
+                gridContainer.style.gap = '0.75rem';
+                gridContainer.style.marginTop = cleanedText ? '0.75rem' : '0';
 
-                const cardUrl = `${API_BASE_URL}/api/uploads/${encodeURIComponent(filename)}`;
-                const card = document.createElement('div');
-                card.className = `attachment-card ${isImage ? 'image-card' : 'file-card'}`;
-                
-                if (isImage) {
-                    card.style.backgroundImage = `url('${cardUrl}')`;
-                    card.innerHTML = `<div class="file-name">${escapeHTML(filename)}</div>`;
-                } else {
-                    card.innerHTML = `
-                        <i class="fas ${faIcon} file-icon ${iconClass}"></i>
-                        <div class="file-name">${escapeHTML(filename)}</div>
-                    `;
-                }
-                
-                card.onclick = () => window.open(cardUrl, '_blank');
-                
-                const wrapper = document.createElement('div');
-                wrapper.style.marginTop = cleanedText ? '0.75rem' : '0';
-                wrapper.appendChild(card);
-                contentDiv.appendChild(wrapper);
+                filenames.forEach(filename => {
+                    const isImage = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(filename);
+                    const ext = filename.split('.').pop().toLowerCase();
+                    
+                    let faIcon = 'fa-file';
+                    let iconClass = 'default';
+                    
+                    if (['xlsx', 'xls', 'csv'].includes(ext)) {
+                        faIcon = 'fa-file-excel';
+                        iconClass = 'excel';
+                    } else if (ext === 'pdf') {
+                        faIcon = 'fa-file-pdf';
+                        iconClass = 'pdf';
+                    } else if (['docx', 'doc', 'txt', 'rtf'].includes(ext)) {
+                        faIcon = 'fa-file-word';
+                        iconClass = 'word';
+                    } else if (['mp3', 'wav', 'ogg', 'm4a', 'webm'].includes(ext)) {
+                        faIcon = 'fa-file-audio';
+                        iconClass = 'audio';
+                    } else if (['pptx', 'ppt'].includes(ext)) {
+                        faIcon = 'fa-file-powerpoint';
+                        iconClass = 'document';
+                    }
+
+                    const cardUrl = `${API_BASE_URL}/api/uploads/${encodeURIComponent(filename)}`;
+                    const card = document.createElement('div');
+                    card.className = `attachment-card ${isImage ? 'image-card' : 'file-card'}`;
+                    card.style.flex = '1 1 calc(50% - 0.375rem)';
+                    card.style.minWidth = '150px';
+                    card.style.maxWidth = '250px';
+                    
+                    if (isImage) {
+                        card.style.backgroundImage = `url('${cardUrl}')`;
+                        card.innerHTML = `<div class="file-name">${escapeHTML(filename)}</div>`;
+                    } else {
+                        card.innerHTML = `
+                            <i class="fas ${faIcon} file-icon ${iconClass}"></i>
+                            <div class="file-name">${escapeHTML(filename)}</div>
+                        `;
+                    }
+                    
+                    card.onclick = () => window.open(cardUrl, '_blank');
+                    gridContainer.appendChild(card);
+                });
+
+                contentDiv.appendChild(gridContainer);
             }
         }
 
@@ -589,8 +889,10 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('token', localStorage.getItem('off1_token') || 'guest_session');
             formData.append('language', 'English');
             
-            if (fileUploadInput && fileUploadInput.files.length > 0) {
-                formData.append('file', fileUploadInput.files[0]);
+            if (selectedFiles && selectedFiles.length > 0) {
+                selectedFiles.forEach(file => {
+                    formData.append('file', file);
+                });
             }
 
             // Visually clear immediately so it feels fast
@@ -1093,16 +1395,92 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) { console.error(e); }
         });
 
+        const newPasswordInput = document.getElementById('new-password');
+        const changeReqs = document.getElementById('change-password-requirements');
+        const changeStrength = document.getElementById('change-strength-bar');
+        const changeCriteria = {
+            length: document.getElementById('change-req-length'),
+            upper: document.getElementById('change-req-upper'),
+            lower: document.getElementById('change-req-lower'),
+            number: document.getElementById('change-req-number'),
+            special: document.getElementById('change-req-special')
+        };
+
+        function checkChangePasswordStrength(val) {
+            const checks = {
+                length: val.length >= 8,
+                upper: /[A-Z]/.test(val),
+                lower: /[a-z]/.test(val),
+                number: /[0-9]/.test(val),
+                special: /[^a-zA-Z0-9]/.test(val)
+            };
+
+            let metCount = 0;
+            for (const [key, met] of Object.entries(checks)) {
+                const el = changeCriteria[key];
+                if (el) {
+                    const icon = el.querySelector('i');
+                    if (met) {
+                        el.classList.add('met');
+                        if (icon) icon.className = 'fas fa-check-circle';
+                        metCount++;
+                    } else {
+                        el.classList.remove('met');
+                        if (icon) icon.className = 'far fa-circle';
+                    }
+                }
+            }
+
+            if (changeStrength) {
+                const pct = (metCount / 5) * 100;
+                changeStrength.style.width = `${pct}%`;
+                if (metCount <= 2) {
+                    changeStrength.style.backgroundColor = '#ef4444';
+                } else if (metCount <= 4) {
+                    changeStrength.style.backgroundColor = '#fbbf24';
+                } else {
+                    changeStrength.style.backgroundColor = '#10b981';
+                }
+            }
+
+            return metCount === 5;
+        }
+
+        if (newPasswordInput && changeReqs) {
+            newPasswordInput.addEventListener('focus', () => {
+                changeReqs.classList.add('visible');
+                changeReqs.classList.remove('hidden');
+            });
+
+            newPasswordInput.addEventListener('blur', () => {
+                if (newPasswordInput.value.length === 0) {
+                    changeReqs.classList.remove('visible');
+                    changeReqs.classList.add('hidden');
+                }
+            });
+
+            newPasswordInput.addEventListener('input', () => {
+                changeReqs.classList.add('visible');
+                changeReqs.classList.remove('hidden');
+                checkChangePasswordStrength(newPasswordInput.value);
+            });
+        }
+
         btnShowPwChange.addEventListener('click', () => {
             pwChangeContainer.classList.toggle('hidden');
         });
 
         btnConfirmPwChange.addEventListener('click', async () => {
             const old_password = document.getElementById('old-password').value;
-            const new_password = document.getElementById('new-password').value;
+            const new_password = newPasswordInput ? newPasswordInput.value : '';
             
             if (!old_password || !new_password) {
                 alert("Please fill in both password fields.");
+                return;
+            }
+
+            if (!checkChangePasswordStrength(new_password)) {
+                alert("New password does not meet all strength requirements.");
                 return;
             }
 
@@ -1115,9 +1493,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 if (data.status === 'success') {
                     alert("Password updated successfully!");
+                    localStorage.setItem('off1_pwned_count', '0');
+                    checkAndShowPwnedWarning();
                     pwChangeContainer.classList.add('hidden');
                     document.getElementById('old-password').value = '';
-                    document.getElementById('new-password').value = '';
+                    if (newPasswordInput) newPasswordInput.value = '';
+                    
+                    // Reset requirements checklist UI
+                    if (changeReqs) {
+                        changeReqs.classList.remove('visible');
+                        changeReqs.classList.add('hidden');
+                    }
+                    if (changeStrength) changeStrength.style.width = '0%';
+                    for (const el of Object.values(changeCriteria)) {
+                        if (el) {
+                            el.classList.remove('met');
+                            const icon = el.querySelector('i');
+                            if (icon) icon.className = 'far fa-circle';
+                        }
+                    }
                 } else {
                     alert("Error: " + data.message);
                 }
@@ -1418,58 +1812,59 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!previewArea) return;
         previewArea.innerHTML = '';
         
-        if (fileUploadInput && fileUploadInput.files.length > 0) {
-            const file = fileUploadInput.files[0];
+        if (selectedFiles.length > 0) {
             previewArea.classList.remove('hidden');
             
-            const isImage = file.type.startsWith('image/');
-            const ext = file.name.split('.').pop().toLowerCase();
-            
-            let faIcon = 'fa-file';
-            let iconClass = 'default';
-            if (['xlsx', 'xls', 'csv'].includes(ext)) {
-                faIcon = 'fa-file-excel';
-                iconClass = 'excel';
-            } else if (ext === 'pdf') {
-                faIcon = 'fa-file-pdf';
-                iconClass = 'pdf';
-            } else if (['docx', 'doc', 'txt', 'rtf'].includes(ext)) {
-                faIcon = 'fa-file-word';
-                iconClass = 'word';
-            } else if (['mp3', 'wav', 'ogg', 'm4a', 'webm'].includes(ext)) {
-                faIcon = 'fa-file-audio';
-                iconClass = 'audio';
-            } else if (['pptx', 'ppt'].includes(ext)) {
-                faIcon = 'fa-file-powerpoint';
-                iconClass = 'document';
-            }
+            selectedFiles.forEach((file, index) => {
+                const isImage = file.type.startsWith('image/');
+                const ext = file.name.split('.').pop().toLowerCase();
+                
+                let faIcon = 'fa-file';
+                let iconClass = 'default';
+                if (['xlsx', 'xls', 'csv'].includes(ext)) {
+                    faIcon = 'fa-file-excel';
+                    iconClass = 'excel';
+                } else if (ext === 'pdf') {
+                    faIcon = 'fa-file-pdf';
+                    iconClass = 'pdf';
+                } else if (['docx', 'doc', 'txt', 'rtf'].includes(ext)) {
+                    faIcon = 'fa-file-word';
+                    iconClass = 'word';
+                } else if (['mp3', 'wav', 'ogg', 'm4a', 'webm'].includes(ext)) {
+                    faIcon = 'fa-file-audio';
+                    iconClass = 'audio';
+                } else if (['pptx', 'ppt'].includes(ext)) {
+                    faIcon = 'fa-file-powerpoint';
+                    iconClass = 'document';
+                }
 
-            const card = document.createElement('div');
-            card.className = `attachment-card ${isImage ? 'image-card' : 'file-card'}`;
-            
-            if (isImage) {
-                const objectUrl = URL.createObjectURL(file);
-                card.style.backgroundImage = `url('${objectUrl}')`;
-                card.dataset.objectUrl = objectUrl;
-                card.innerHTML = `
-                    <button type="button" class="delete-btn" title="Remove attachment">&times;</button>
-                    <div class="file-name">${escapeHTML(file.name)}</div>
-                `;
-            } else {
-                card.innerHTML = `
-                    <button type="button" class="delete-btn" title="Remove attachment">&times;</button>
-                    <i class="fas ${faIcon} file-icon ${iconClass}"></i>
-                    <div class="file-name">${escapeHTML(file.name)}</div>
-                `;
-            }
-            
-            const deleteBtn = card.querySelector('.delete-btn');
-            deleteBtn.onclick = (e) => {
-                e.stopPropagation();
-                clearAttachment();
-            };
+                const card = document.createElement('div');
+                card.className = `attachment-card ${isImage ? 'image-card' : 'file-card'}`;
+                
+                if (isImage) {
+                    const objectUrl = URL.createObjectURL(file);
+                    card.style.backgroundImage = `url('${objectUrl}')`;
+                    card.dataset.objectUrl = objectUrl;
+                    card.innerHTML = `
+                        <button type="button" class="delete-btn" title="Remove attachment">&times;</button>
+                        <div class="file-name">${escapeHTML(file.name)}</div>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <button type="button" class="delete-btn" title="Remove attachment">&times;</button>
+                        <i class="fas ${faIcon} file-icon ${iconClass}"></i>
+                        <div class="file-name">${escapeHTML(file.name)}</div>
+                    `;
+                }
+                
+                const deleteBtn = card.querySelector('.delete-btn');
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    removeSelectedFile(index);
+                };
 
-            previewArea.appendChild(card);
+                previewArea.appendChild(card);
+            });
             
             if (attachmentBtn) attachmentBtn.style.color = 'var(--primary-color)';
             userInput.placeholder = "Press send to upload...";
@@ -1480,20 +1875,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function clearAttachment() {
-        if (fileUploadInput) {
-            const card = previewArea ? previewArea.querySelector('.attachment-card') : null;
-            if (card && card.dataset.objectUrl) {
-                URL.revokeObjectURL(card.dataset.objectUrl);
+    function removeSelectedFile(index) {
+        if (previewArea) {
+            const cards = previewArea.querySelectorAll('.attachment-card');
+            if (cards[index] && cards[index].dataset.objectUrl) {
+                URL.revokeObjectURL(cards[index].dataset.objectUrl);
             }
-            fileUploadInput.value = '';
         }
+        selectedFiles.splice(index, 1);
+        updateAttachmentPreview();
+    }
+
+    function clearAttachment() {
+        if (previewArea) {
+            const cards = previewArea.querySelectorAll('.attachment-card');
+            cards.forEach(card => {
+                if (card.dataset.objectUrl) {
+                    URL.revokeObjectURL(card.dataset.objectUrl);
+                }
+            });
+        }
+        selectedFiles = [];
+        if (fileUploadInput) fileUploadInput.value = '';
         updateAttachmentPreview();
     }
 
     if (attachmentBtn && fileUploadInput) {
         attachmentBtn.onclick = () => fileUploadInput.click();
-        fileUploadInput.onchange = updateAttachmentPreview;
+        fileUploadInput.onchange = () => {
+            const files = Array.from(fileUploadInput.files);
+            if (selectedFiles.length + files.length > 10) {
+                alert("You can only upload up to 10 files in total.");
+                fileUploadInput.value = '';
+                return;
+            }
+            selectedFiles = selectedFiles.concat(files);
+            updateAttachmentPreview();
+            fileUploadInput.value = '';
+        };
     }
 
     if (micBtn) {
@@ -1519,12 +1938,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     mediaRecorder.onstop = () => {
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                         audioChunks = [];
-                        // Create a file from the blob and place it in the file upload input
                         const audioFile = new File([audioBlob], "voice_recording.webm", { type: "audio/webm" });
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(audioFile);
-                        fileUploadInput.files = dataTransfer.files;
                         
+                        if (selectedFiles.length + 1 > 10) {
+                            alert("You can only upload up to 10 files in total.");
+                            return;
+                        }
+                        selectedFiles.push(audioFile);
                         updateAttachmentPreview();
                         
                         micBtn.style.color = 'var(--text-secondary)';
