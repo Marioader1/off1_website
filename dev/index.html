@@ -2,6 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <script>
+        (function() {
+            const isAdmin = localStorage.getItem('off1_is_admin') === 'true';
+            const isOwner = localStorage.getItem('off1_is_owner') === 'true';
+            const roleRank = parseInt(localStorage.getItem('off1_role_rank') || '0', 10);
+            if (!isAdmin && !isOwner && roleRank < 1) {
+                alert("Access Denied: The development website is restricted to Administrators and Owners only.");
+                window.location.href = "../login.html"; 
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Off1 - AI Assistant</title>
     <link rel="icon" type="image/png" href="favicon.png">
