@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Off1</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body class="login-body">
+    <div class="login-card glass-panel">
+        <h1 class="logo glow-text">Off1</h1>
+        <p class="subtitle" id="form-subtitle">Welcome back, system online.</p>
+
+        <form id="login-form">
+            <div class="login-input-group">
+                <div id="email-field" class="d-none">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" class="login-input" placeholder="Enter your email" autocomplete="email">
+                </div>
+                <div>
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="login-input" placeholder="Enter username" required autocomplete="username">
+                </div>
+                <div>
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="login-input" placeholder="Enter password" required autocomplete="current-password">
+                    <div class="password-requirements hidden" id="register-password-requirements">
+                        <div class="strength-bar-container">
+                            <div class="strength-bar" id="register-strength-bar"></div>
+                        </div>
+                        <div class="requirements-grid">
+                            <div class="requirement-item" id="req-length"><i class="far fa-circle"></i> 8+ Characters</div>
+                            <div class="requirement-item" id="req-upper"><i class="far fa-circle"></i> 1 Uppercase</div>
+                            <div class="requirement-item" id="req-lower"><i class="far fa-circle"></i> 1 Lowercase</div>
+                            <div class="requirement-item" id="req-number"><i class="far fa-circle"></i> 1 Number</div>
+                            <div class="requirement-item" id="req-special"><i class="far fa-circle"></i> 1 Special (!@#$)</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="verification-field" class="d-none">
+                    <label for="verification-code">Verification Code</label>
+                    <p id="verify-email-info" style="font-size: 0.75rem; color: var(--primary-color); margin-bottom: 0.3rem;">Code sent to: [email]</p>
+                    <input type="text" id="verification-code" class="login-input" placeholder="X1Y2Z3" maxlength="6" style="text-align: center; letter-spacing: 0.3rem; font-weight: 600; text-transform: uppercase;">
+                    <span id="resend-code" style="display: block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer; text-align: right;">Resend Code</span>
+                </div>
+            </div>
+
+            <div id="forgot-password-link" style="margin-top: 0.8rem; text-align: right;">
+                <span id="btn-forgot-pw" style="font-size: 0.8rem; color: var(--primary-color); cursor: pointer;">Forgot Password?</span>
+            </div>
+
+            <div id="error-message" class="text-danger d-none" style="margin-top: 1rem; font-size: 0.85rem;"></div>
+
+            <button type="submit" id="submit-btn" class="btn btn-primary w-100" style="margin-top: 1.5rem;">Login</button>
+            
+            <div style="margin-top: 1rem; position: relative; text-align: center;">
+                <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 1.5rem 0;">
+                <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--sidebar-bg); padding: 0 1rem; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Or</span>
+            </div>
+
+            <button type="button" id="btn-passkey-login" class="btn btn-secondary w-100" style="margin-top: 1rem; border-color: var(--primary-color); display: flex; align-items: center; justify-content: center; gap: 0.8rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user-check"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+                Sign in with Passkey
+            </button>
+
+            <button type="button" id="btn-guest-login" class="btn btn-secondary w-100" style="margin-top: 1rem; border-color: transparent; display: flex; align-items: center; justify-content: center; gap: 0.8rem; background: rgba(255, 255, 255, 0.05);">
+                <i class="fas fa-user-secret" style="font-size: 1.1rem;"></i>
+                Continue as Guest
+            </button>
+        </form>
+
+        <!-- Forgot Password Modal (Simplified) -->
+        <div id="forgot-pw-container" class="d-none" style="margin-top: 2rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Enter your email to receive a reset code.</p>
+            <input type="email" id="forgot-email" class="login-input" placeholder="Your account email">
+            <button id="send-reset-btn" class="btn btn-secondary w-100" style="margin-top: 1rem;">Send Reset Code</button>
+            <span id="back-to-login" style="display: block; margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">Back to Login</span>
+        </div>
+
+        <p class="login-toggle">
+            <span id="toggle-text">Don't have an account? </span>
+            <span id="toggle-link">Register</span>
+        </p>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Off1 - AI Assistant</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="experimental-banner">
+        <span>⚠️ Experimental Stage: Server and website are currently in development.</span>
+    </div>
+    <div id="update-banner" class="update-banner hidden">
+        <span>✨ Website updated! <a href="#" onclick="window.location.reload(); return false;">Refresh now</a> for the latest features and ranking system.</span>
+        <button class="close-update" onclick="document.getElementById('update-banner').classList.add('hidden')">&times;</button>
+    </div>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-container">
+                <h1 class="logo glow-text">Off1</h1>
+                <p class="subtitle">System Online</p>
+                <button class="sidebar-toggle-desktop" id="sidebar-toggle-desktop" aria-label="Toggle Sidebar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></button>
+            </div>
+            <div class="user-profile" id="user-profile-section">
+                <div class="user-avatar" id="user-initials">U</div>
+                <div class="user-info">
+                    <span class="username-label" id="display-username">Loading...</span>
+                    <span class="user-email-status" id="email-status">Checking email...</span>
+                </div>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-item active" id="btn-session"><span>Current Session</span></button>
+                <button class="nav-item" id="btn-history"><span>History Sync</span></button>
+                <button class="nav-item" id="btn-settings"><span>Settings</span></button>
+                <button class="nav-item text-success" id="btn-support"><span>Support Me ❤️</span></button>
+                <button class="nav-item text-warning d-none" id="btn-admin"><span>Admin Panel</span></button>
+                <button class="nav-item" id="btn-theme-toggle"><span>Toggle Light Mode ☀️</span></button>
+            </div>
+            <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 1rem;">
+                <button class="nav-item logout-btn text-danger w-100" id="logout-btn"><span>Logout</span></button>
+                <div class="version-label" id="btn-changelog" style="cursor: pointer; text-decoration: underline;" title="View Changelog">v<span id="platform-version">0.8.1</span></div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-container glass-panel">
+            <div class="chat-header">
+                <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <h2>AI Interface</h2>
+                <span class="status-indicator"></span>
+            </div>
+            
+            <div id="pwned-warning-container" class="hidden"></div>
+            
+            <div class="chat-history" id="chat-history">
+                <!-- Messages will be injected here -->
+                <div class="message ai-message">
+                    <div class="avatar">J</div>
+                    <div class="content">
+                        Greetings. I am Off1. How may I assist you today?
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div id="attachment-preview-area" class="hidden"></div>
+                <form id="chat-form">
+                    <input type="file" id="file-upload-input" accept=".pdf,.docx,.pptx,.xlsx,image/*,audio/*" style="display: none;" multiple>
+                    <button type="button" id="attachment-btn" class="media-btn" aria-label="Attach File">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <input type="text" id="user-input" placeholder="Message Off1..." autocomplete="off">
+                    <button type="button" id="mic-btn" class="media-btn" aria-label="Live Audio">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="22"></line>
+                        </svg>
+                    </button>
+                    <button type="submit" id="send-btn" aria-label="Send message">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Interstitial Ad Overlay -->
+    <div id="interstitial-ad" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="ad-video-container">
+            <div class="ad-header">
+                <span class="ad-badge">Advertisement</span>
+                <span id="ad-timer">Ad finishes in 5s</span>
+            </div>
+            <div class="ad-content-large">
+                <h3>Sponsor Message</h3>
+                <p>This is a placeholder for a video or immersive ad.</p>
+                <div class="spinner"></div>
+            </div>
+            <button id="close-ad-btn" class="btn btn-primary hidden" style="margin-top: 1rem; width: 100%;">Close Ad</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <div class="settings-header">
+                <i class="fas fa-cog"></i>
+                <h2 class="glow-text" style="margin:0;">Settings</h2>
+            </div>
+            
+            <form id="settings-form">
+                <!-- General Settings -->
+                <div class="settings-group">
+                    <div class="settings-group-title">
+                        <i class="fas fa-sliders-h"></i> General
+                    </div>
+                    
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <h4>AI Persona Name</h4>
+                            <p>Customize what I call myself.</p>
+                        </div>
+                        <input type="text" id="setting-ai-name" class="settings-input" style="width: 140px;">
+                    </div>
+
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <h4>Interface Language</h4>
+                            <p>Choose your preferred language.</p>
+                        </div>
+                        <select id="setting-language" class="settings-input" style="width: 140px;">
+                            <option value="English">English</option>
+                            <option value="Arabic">Arabic</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <h4>Email Address</h4>
+                            <p>Update your account email.</p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="email" id="setting-email" class="settings-input" style="width: 140px;" readonly>
+                            <button type="button" id="btn-change-email" class="btn-icon-only" title="Change Email"><i class="fas fa-edit"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Settings -->
+                <div class="settings-group">
+                    <div class="settings-group-title">
+                        <i class="fas fa-shield-alt"></i> Security
+                    </div>
+                    
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <h4>Passkeys</h4>
+                            <p>Use biometrics or hardware keys.</p>
+                        </div>
+                        <button type="button" id="btn-setup-passkey" class="btn-passkey">
+                            <i class="fas fa-fingerprint"></i> Add New
+                        </button>
+                    </div>
+
+                    <!-- Passkey List Container -->
+                    <div id="passkey-list-container" class="settings-nested-list hidden">
+                        <!-- Populated via JS -->
+                    </div>
+
+                    <div class="settings-row" style="border-top: 1px solid var(--glass-border); padding-top: 1rem; margin-top: 0.5rem;">
+                        <div class="settings-info">
+                            <h4>Account Password</h4>
+                            <p>Update your system credentials.</p>
+                        </div>
+                        <button type="button" id="btn-show-pw-change" class="btn-passkey" style="background: rgba(255,255,255,0.05); border-color: var(--glass-border);">
+                            <i class="fas fa-key"></i> Change
+                        </button>
+                    </div>
+
+                    <!-- Password Change Form Container -->
+                    <div id="password-change-container" class="settings-nested-form hidden">
+                        <div class="settings-input-stack">
+                            <input type="password" id="old-password" placeholder="Current Password" class="settings-input w-100">
+                            <input type="password" id="new-password" placeholder="New Password" class="settings-input w-100">
+                            <div class="password-requirements hidden" id="change-password-requirements" style="text-align: left;">
+                                <div class="strength-bar-container">
+                                    <div class="strength-bar" id="change-strength-bar"></div>
+                                </div>
+                                <div class="requirements-grid">
+                                    <div class="requirement-item" id="change-req-length"><i class="far fa-circle"></i> 8+ Characters</div>
+                                    <div class="requirement-item" id="change-req-upper"><i class="far fa-circle"></i> 1 Uppercase</div>
+                                    <div class="requirement-item" id="change-req-lower"><i class="far fa-circle"></i> 1 Lowercase</div>
+                                    <div class="requirement-item" id="change-req-number"><i class="far fa-circle"></i> 1 Number</div>
+                                    <div class="requirement-item" id="change-req-special"><i class="far fa-circle"></i> 1 Special (!@#$)</div>
+                                </div>
+                            </div>
+                            <button type="button" id="btn-confirm-pw-change" class="btn btn-primary w-100" style="margin-top: 0.5rem;">Confirm Change</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="danger-zone">
+                    <div class="settings-group-title" style="color: #ef4444;">
+                        <i class="fas fa-exclamation-triangle"></i> Danger Zone
+                    </div>
+                    <button type="button" id="btn-delete-account" class="btn btn-secondary w-100" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); margin-top: 0.5rem;">
+                        <i class="fas fa-trash-alt" style="margin-right: 8px;"></i> Delete My Account
+                    </button>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 2;">Save Changes</button>
+                    <button type="button" id="close-settings-btn" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="admin-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal-content glass-panel" style="max-width: 600px; text-align: left;">
+            <h2 class="glow-text" style="color: #fbbf24;">Admin Dashboard</h2>
+            <div id="admin-stats" style="margin-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="stat-box"><span>Uptime:</span> <strong id="stat-uptime">Loading...</strong></div>
+                <div class="stat-box"><span>Requests:</span> <strong id="stat-requests">...</strong></div>
+                <div class="stat-box"><span>CPU:</span> <strong id="stat-cpu">...</strong></div>
+                <div class="stat-box"><span>RAM:</span> <strong id="stat-ram">...</strong></div>
+            </div>
+            
+            <!-- Speed Test Section -->
+            <div style="margin-top: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; border: 1px solid var(--glass-border);">
+                <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-primary);">Network Speed Test</h3>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button id="run-speedtest-btn" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Run Test</button>
+                    <span id="speedtest-status" style="font-size: 0.85rem; color: var(--text-secondary);">Ready to test</span>
+                </div>
+                <div id="speedtest-results" class="hidden" style="margin-top: 1rem; display: flex; gap: 1rem; text-align: center;">
+                    <div style="flex: 1;">
+                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Ping</span>
+                        <div id="st-ping" style="font-weight: 600; color: #10b981;">-- ms</div>
+                    </div>
+                    <div style="flex: 1; border-left: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border);">
+                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Download</span>
+                        <div id="st-dl" style="font-weight: 600; color: var(--primary-color);">-- Mbps</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Upload</span>
+                        <div id="st-ul" style="font-weight: 600; color: var(--accent-color);">-- Mbps</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Speed Test Section -->
+            <div style="margin-top: 1rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; border: 1px solid var(--glass-border);">
+                <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-primary);">Client Speed Test</h3>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button id="run-client-test-btn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Test My Speed</button>
+                    <span id="client-test-status" style="font-size: 0.85rem; color: var(--text-secondary);">Ready</span>
+                </div>
+                <div id="client-test-results" class="hidden" style="margin-top: 1rem; display: flex; gap: 1rem; text-align: center;">
+                    <div style="flex: 1;">
+                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Latency</span>
+                        <div id="ct-ping" style="font-weight: 600; color: #10b981;">-- ms</div>
+                    </div>
+                    <div style="flex: 1; border-left: 1px solid var(--glass-border);">
+                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Download</span>
+                        <div id="ct-dl" style="font-weight: 600; color: var(--primary-color);">-- Mbps</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button id="close-admin-btn" class="btn btn-secondary" style="width: 100%;">Close Panel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Select Modal -->
+    <div id="history-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal-content glass-panel" style="max-width: 400px; text-align: left; max-height: 70vh; display: flex; flex-direction: column;">
+            <h2 class="glow-text">Chat History</h2>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">Select a past session to view.</p>
+            <div id="history-session-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 0.5rem;">
+                <!-- Session buttons will be injected here -->
+            </div>
+            <div style="margin-top: 1.5rem; display: flex;">
+                <button id="close-history-btn" class="btn btn-secondary" style="width: 100%;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ad Consent Modal -->
+    <div id="ad-modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal-content glass-panel">
+            <h2 class="glow-text">Support Off1</h2>
+            <p>Would you like to support us by viewing ads during this session? It's completely optional.</p>
+            <div class="modal-actions">
+                <button id="ad-accept" class="btn btn-primary">Yes, show ads</button>
+                <button id="ad-decline" class="btn btn-secondary">No, thanks</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Server Busy Modal -->
+    <div id="busy-modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal-content glass-panel" style="max-width: 450px;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⏳</div>
+            <h2 class="glow-text">Server is Busy</h2>
+            <p style="margin: 1rem 0;">I'm currently handling other complex searches. Your request is in the queue!</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem;">While you wait, would you like to watch a short ad to support our server costs?</p>
+            <div class="modal-actions" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                <button id="busy-watch-ad" class="btn btn-primary" style="width: 100%;">Watch Ad & Support ❤️</button>
+                <button id="busy-close" class="btn btn-secondary" style="width: 100%;">I'll Just Wait</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Modal (v0.8.1) -->
+    <div id="privacy-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" style="z-index: 9999;">
+        <div class="modal-content glass-panel" style="max-width: 500px; text-align: left;">
+            <h2 id="privacy-title" style="margin-bottom: 1rem; color: var(--text-main);">Privacy & Data Usage Policy</h2>
+            <div style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">
+                <ol style="padding-left: 1.2rem;">
+                    <li style="margin-bottom: 0.5rem;"><strong>Local & Secure:</strong> Your data is yours. We only store the chat history and preferences necessary to make the app work for you.</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>No Selling Data:</strong> We do not and will never sell your personal data or conversations to third parties.</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Device Access:</strong> Features like Voice and File Upload only access your microphone and files when you explicitly click them.</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Guest Mode:</strong> Using Guest Mode means your chat vanishes when you leave. No history is synced.</li>
+                </ol>
+            </div>
+            <div class="modal-actions" style="display: flex; justify-content: flex-end;">
+                <button class="btn btn-primary" id="btn-accept-privacy">I Understand & Accept</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Changelog Modal (v0.8.1) -->
+    <div id="changelog-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal-content glass-panel" style="max-width: 500px; text-align: left;">
+            <h2 style="margin-bottom: 1rem; color: var(--text-main);">What's New in The Security Update (v0.8.1)</h2>
+            <div style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">
+                <ul style="padding-left: 1.2rem;">
+                    <li style="margin-bottom: 0.5rem;"><strong>Secure Password Reset:</strong> Accounts flagged in breaches now receive secure, 64-character tokenized links via email, eliminating guessable reset codes.</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Direct Access Protection:</strong> The password reset form is completely locked down, preventing direct unauthorized manual navigation.</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Media & File Uploads:</strong> Send images, PDFs, Excel sheets, and Audio files using the `+` button.</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Live Audio:</strong> Talk directly using the Microphone button.</li>
+                </ul>
+            </div>
+            <div class="modal-actions" style="display: flex; justify-content: flex-end;">
+                <button class="btn btn-primary" id="btn-close-changelog">Awesome!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Deletion Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal-content glass-panel" style="max-width: 400px;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+            <h2 id="delete-warning-title" class="glow-text" style="color: #ef4444;">Warning</h2>
+            <p id="delete-warning-text" style="margin: 1.5rem 0; line-height: 1.5; color: var(--text-primary);">Are you sure you want to delete your account?</p>
+            <div id="delete-modal-actions" class="modal-actions" style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button id="delete-no" class="btn btn-secondary" style="flex: 1;">No, keep it</button>
+                <button id="delete-yes" class="btn btn-primary" style="flex: 1; background: #ef4444;">Yes, delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
