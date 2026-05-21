@@ -4,13 +4,59 @@
     <meta charset="UTF-8">
     <script>
         (function() {
-            const isAdmin = localStorage.getItem('off1_is_admin') === 'true';
-            const isOwner = localStorage.getItem('off1_is_owner') === 'true';
-            const roleRank = parseInt(localStorage.getItem('off1_role_rank') || '0', 10);
-            if (!isAdmin && !isOwner && roleRank < 1) {
-                alert("Access Denied: The development website is restricted to Administrators and Owners only.");
-                window.location.href = "../login.html"; 
+            // Apply immediate CSS hide to prevent UI flashing
+            const style = document.createElement('style');
+            style.innerHTML = 'body { display: none !important; }';
+            document.head.appendChild(style);
+
+            // Simple resolver for API_BASE_URL (matching main.js)
+            const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'http://localhost:5000'
+                : ((window.location.hostname.endsWith('github.io') || window.location.hostname.endsWith('vercel.app'))
+                    ? 'https://miasmatical-kellie-quartan.ngrok-free.dev'
+                    : window.location.origin);
+
+            const username = localStorage.getItem('off1_username');
+            const token = localStorage.getItem('off1_token');
+
+            if (!username || !token || username === 'Guest') {
+                alert("Access Denied: You must be logged in to access the development website.");
+                window.location.href = "../login.html";
+                return;
             }
+
+            // Verify with the stable backend
+            fetch(API_BASE_URL + '/api/verify_admin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify({ username: username, token: token })
+            })
+            .then(response => {
+                if (response.status === 200) {
+                    return response.json();
+                }
+                throw new Error('Unauthorized');
+            })
+            .then(data => {
+                if (data.authorized) {
+                    // Update role info to stay synced
+                    localStorage.setItem('off1_is_admin', data.is_admin ? 'true' : 'false');
+                    localStorage.setItem('off1_is_owner', data.is_owner ? 'true' : 'false');
+                    localStorage.setItem('off1_role_rank', data.role_rank.toString());
+                    
+                    // Show the body!
+                    style.remove();
+                } else {
+                    throw new Error('Unauthorized');
+                }
+            })
+            .catch(error => {
+                alert("Access Denied: The development website is restricted to Administrators and Owners only.");
+                window.location.href = "../login.html";
+            });
         })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -395,5 +441,9 @@
     </div>
 
     <script src="main.js"></script>
+
+    <!-- Vercel Web Analytics & Speed Insights -->
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>
