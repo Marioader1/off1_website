@@ -126,6 +126,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentUser = 'Guest';
                 token = 'guest_session';
                 
+                if (window.location.pathname.includes('/dev/')) {
+                    alert("Your access has been invalidated or expired. Redirecting to login...");
+                    window.location.href = '../login.html';
+                    return;
+                }
+                
                 if (btnSettings) btnSettings.style.display = 'none';
                 if (btnHistory) btnHistory.style.display = 'none';
                 if (btnAdmin) btnAdmin.style.display = 'none';
@@ -217,35 +223,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Logout/Login functionality
 
+    function performLogout(silent = false) {
+        // Revert back to Guest mode without losing chat context
+        localStorage.setItem('off1_username', 'Guest');
+        localStorage.setItem('off1_token', 'guest_session');
+        localStorage.setItem('off1_role_rank', '0');
+        localStorage.setItem('off1_is_admin', 'false');
+        localStorage.setItem('off1_is_owner', 'false');
+        localStorage.setItem('off1_pwned_count', '0');
+        localStorage.removeItem('off1_email');
+        currentUser = 'Guest';
+        token = 'guest_session';
+        
+        // Hide modals
+        if (settingsModal) settingsModal.classList.add('hidden');
+        if (adminModal) adminModal.classList.add('hidden');
+        if (historyModal) historyModal.classList.add('hidden');
+        
+        if (window.location.pathname.includes('/dev/')) {
+            if (!silent) {
+                alert("You have successfully logged out. Redirecting to login...");
+            }
+            window.location.href = '../login.html';
+        } else {
+            updateGuestUI();
+            checkAndShowPwnedWarning();
+            updateUserHeader();
+            
+            if (!silent) {
+                alert("You have successfully logged out. Back in Guest mode!");
+            }
+        }
+    }
+
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             const currentU = localStorage.getItem('off1_username') || 'Guest';
             if (currentU === 'Guest') {
                 // Redirect to login page
-                window.location.href = 'login.html';
+                window.location.href = window.location.pathname.includes('/dev/') ? '../login.html' : 'login.html';
             } else {
-                // Revert back to Guest mode without losing chat context
-                localStorage.setItem('off1_username', 'Guest');
-                localStorage.setItem('off1_token', 'guest_session');
-                localStorage.setItem('off1_role_rank', '0');
-                localStorage.setItem('off1_is_admin', 'false');
-                localStorage.setItem('off1_is_owner', 'false');
-                localStorage.setItem('off1_pwned_count', '0');
-                localStorage.removeItem('off1_email');
-                currentUser = 'Guest';
-                token = 'guest_session';
-                
-                // Hide modals
-                if (settingsModal) settingsModal.classList.add('hidden');
-                if (adminModal) adminModal.classList.add('hidden');
-                if (historyModal) historyModal.classList.add('hidden');
-                
-                updateGuestUI();
-                checkAndShowPwnedWarning();
-                updateUserHeader();
-                
-                // Alert the user gently
-                alert("You have successfully logged out. Back in Guest mode!");
+                performLogout();
             }
         });
     }
@@ -292,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 if (response.ok) {
                     alert('Your account has been deleted.');
-                    performLogout();
+                    performLogout(true);
                 } else {
                     alert('Error: ' + data.message);
                     deleteModal.classList.add('hidden');
@@ -665,6 +683,17 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(timeoutId);
 
             if (response.status === 401 || response.status === 403) {
+                if (window.location.pathname.includes('/dev/')) {
+                    alert("Your session has expired. Redirecting to login...");
+                    localStorage.setItem('off1_username', 'Guest');
+                    localStorage.setItem('off1_token', 'guest_session');
+                    localStorage.setItem('off1_role_rank', '0');
+                    localStorage.setItem('off1_is_admin', 'false');
+                    localStorage.setItem('off1_is_owner', 'false');
+                    localStorage.removeItem('off1_email');
+                    window.location.href = '../login.html';
+                    return;
+                }
                 alert("Your session has expired. Transitioning to Guest mode.");
                 localStorage.setItem('off1_username', 'Guest');
                 localStorage.setItem('off1_token', 'guest_session');
