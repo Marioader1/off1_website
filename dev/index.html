@@ -148,6 +148,15 @@
                             <line x1="12" y1="19" x2="12" y2="22"></line>
                         </svg>
                     </button>
+                    <select id="model-select" style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 8px; padding: 0.5rem; outline: none; margin-left: 0.5rem; margin-right: 0.5rem; max-width: 150px; font-size: 0.85rem; font-family: inherit; cursor: pointer;">
+                        <option value="gemma4-e2b-text" selected>Gemma 4 E2B Text</option>
+                        <option value="gemma4-e2b-multimodal">Gemma 4 E2B Vision</option>
+                        <option value="gemma4-e4b-text">Gemma 4 E4B Text</option>
+                        <option value="gemma4:e2b">Gemma 4 E2B Base</option>
+                        <option value="gemma4:e4b">Gemma 4 E4B Base</option>
+                        <option value="qwen35-voice-gpu">Qwen 3.5 Voice GPU</option>
+                        <option value="qwen35-gateway-cpu">Qwen 3.5 Gateway CPU</option>
+                    </select>
                     <button type="submit" id="send-btn" aria-label="Send message">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="22" y1="2" x2="11" y2="13"></line>

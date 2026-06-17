@@ -660,6 +660,11 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('token', localStorage.getItem('off1_token') || 'guest_session');
             formData.append('language', 'English');
             
+            const modelSelect = document.getElementById('model-select');
+            if (modelSelect) {
+                formData.append('model', modelSelect.value);
+            }
+            
             if (selectedFiles && selectedFiles.length > 0) {
                 selectedFiles.forEach(file => {
                     formData.append('file', file);
