@@ -1760,4 +1760,52 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // 🚀 Easter Egg: Secret Turbo Model Unlock (Click Off1 Logo 5 times)
+    const logoHeader = document.querySelector('.logo-container .logo');
+    const modelSelect = document.getElementById('model-select');
+
+    function checkSecretModelUnlock() {
+        const isDevPortal = window.location.pathname.includes('/dev/');
+        const isUnlocked = localStorage.getItem('off1_turbo_unlocked') === 'true' || isDevPortal;
+
+        if (isUnlocked && modelSelect) {
+            if (!modelSelect.querySelector('option[value="gemma3-1b-turbo"]')) {
+                const turboOption = document.createElement('option');
+                turboOption.value = 'gemma3-1b-turbo';
+                turboOption.textContent = '🚀 Turbo (Gemma 3 1B Secret)';
+                turboOption.style.background = 'linear-gradient(135deg, #f59e0b, #ef4444)';
+                turboOption.style.color = '#ffffff';
+                turboOption.style.fontWeight = 'bold';
+                modelSelect.appendChild(turboOption);
+            }
+        }
+    }
+
+
+    checkSecretModelUnlock();
+
+    if (logoHeader) {
+        let logoClickCount = 0;
+        let logoClickTimer = null;
+
+        logoHeader.style.cursor = 'pointer';
+        logoHeader.title = 'Click 5 times for a secret... 🤫';
+
+        logoHeader.addEventListener('click', () => {
+            logoClickCount++;
+            clearTimeout(logoClickTimer);
+            logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
+
+            if (logoClickCount === 5) {
+                logoClickCount = 0;
+                localStorage.setItem('off1_turbo_unlocked', 'true');
+                checkSecretModelUnlock();
+                if (modelSelect) modelSelect.value = 'gemma3-1b-turbo';
+                
+                alert("🎉 SECRET UNLOCKED! You unlocked the '🚀 Turbo (Gemma 3 1B Secret)' model! It is super fast!");
+            }
+        });
+    }
+
 });
+

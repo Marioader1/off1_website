@@ -1760,4 +1760,104 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // 🚀 Easter Egg Puzzle: Cipher Vault Terminal (SWIFT)
+    const logoHeader = document.querySelector('.logo-container .logo');
+    const modelSelect = document.getElementById('model-select');
+    const secretVaultModal = document.getElementById('secret-vault-modal');
+    const cipherCodeInput = document.getElementById('cipher-code-input');
+    const cipherSubmitBtn = document.getElementById('cipher-submit-btn');
+    const cipherCancelBtn = document.getElementById('cipher-cancel-btn');
+    const cipherFeedback = document.getElementById('cipher-feedback');
+
+    function checkSecretModelUnlock() {
+        const isDevPortal = window.location.pathname.includes('/dev/');
+        const isUnlocked = localStorage.getItem('off1_turbo_unlocked') === 'true' || isDevPortal;
+
+        if (isUnlocked && modelSelect) {
+            if (!modelSelect.querySelector('option[value="gemma3-1b-turbo"]')) {
+                const turboOption = document.createElement('option');
+                turboOption.value = 'gemma3-1b-turbo';
+                turboOption.textContent = '🚀 Turbo (Gemma 3 1B Secret)';
+                turboOption.style.background = 'linear-gradient(135deg, #f59e0b, #ef4444)';
+                turboOption.style.color = '#ffffff';
+                turboOption.style.fontWeight = 'bold';
+                modelSelect.appendChild(turboOption);
+            }
+        }
+    }
+
+
+    checkSecretModelUnlock();
+
+    // Trigger Vault Terminal modal on clicking logo 3 times
+    if (logoHeader && secretVaultModal) {
+        let logoClickCount = 0;
+        let logoClickTimer = null;
+
+        logoHeader.style.cursor = 'pointer';
+        logoHeader.title = 'Click 3 times to open the Secret Cipher Vault 🔐';
+
+        logoHeader.addEventListener('click', () => {
+            logoClickCount++;
+            clearTimeout(logoClickTimer);
+            logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 1500);
+
+            if (logoClickCount === 3) {
+                logoClickCount = 0;
+                secretVaultModal.classList.remove('hidden');
+                if (cipherCodeInput) {
+                    cipherCodeInput.value = '';
+                    cipherCodeInput.focus();
+                }
+                if (cipherFeedback) cipherFeedback.textContent = '';
+            }
+        });
+    }
+
+    if (cipherCancelBtn && secretVaultModal) {
+        cipherCancelBtn.onclick = () => secretVaultModal.classList.add('hidden');
+    }
+
+    // Interactive Clue Clicks
+    document.querySelectorAll('.secret-clue').forEach(clue => {
+        clue.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const pos = clue.getAttribute('data-clue-pos');
+            const letter = clue.textContent.trim();
+            alert(`🔍 Secret Clue Found!\nPosition [${pos}] of the 5-letter cipher is: '${letter}'`);
+        });
+    });
+
+    // Code Verification
+    if (cipherSubmitBtn && cipherCodeInput && secretVaultModal) {
+        cipherSubmitBtn.onclick = () => {
+            const entered = cipherCodeInput.value.trim().toUpperCase();
+            if (entered === 'SWIFT') {
+                localStorage.setItem('off1_turbo_unlocked', 'true');
+                checkSecretModelUnlock();
+                if (modelSelect) modelSelect.value = 'gemma3-1b-turbo';
+                
+                if (cipherFeedback) {
+                    cipherFeedback.style.color = '#10b981';
+                    cipherFeedback.textContent = 'ACCESS GRANTED! Unlocking Turbo model...';
+                }
+                setTimeout(() => {
+                    secretVaultModal.classList.add('hidden');
+                    alert("🎉 CIPHER DECODED SUCCESSFULLY!\n\nYou unlocked '🚀 Turbo (Gemma 3 1B Secret)' model! It is now selectable in your model dropdown menu.");
+                }, 800);
+            } else {
+                if (cipherFeedback) {
+                    cipherFeedback.style.color = '#ef4444';
+                    cipherFeedback.textContent = 'INVALID CIPHER CODE! Search the site clues...';
+                }
+                cipherCodeInput.style.borderColor = '#ef4444';
+                setTimeout(() => {
+                    cipherCodeInput.style.borderColor = 'var(--accent-color)';
+                }, 1000);
+            }
+        };
+    }
+
 });
+
+
