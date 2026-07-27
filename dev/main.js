@@ -613,6 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         chatHistory.appendChild(messageDiv);
         scrollToBottom();
+        return messageDiv;
     }
 
     async function fetchAIResponse(userMessage) {
@@ -671,6 +672,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            formData.append('stream', 'true');
+
             // Visually clear immediately so it feels fast
             clearAttachment();
 
@@ -725,31 +728,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const data = await response.json();
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let accumulated = "";
+            let done = false;
+            let initialized = false;
+            let aiMessageDiv = null;
+            let loadingBubble = document.getElementById(loadingId);
+            let buffer = "";
 
-            // Handle Busy Status
-            if (data.status === 'busy') {
-                busyModal.classList.remove('hidden');
-                const loadingBubble = document.getElementById(loadingId);
-                if (loadingBubble) loadingBubble.remove();
-                appendMessage('ai', data.response);
-                return;
+            while (!done) {
+                const { value, done: doneReading } = await reader.read();
+                done = doneReading;
+                if (value) {
+                    buffer += decoder.decode(value, { stream: !done });
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        const cleanLine = line.trim();
+                        if (cleanLine) {
+                            try {
+                                const chunk = JSON.parse(cleanLine);
+
+                                if (chunk.status === 'busy') {
+                                    busyModal.classList.remove('hidden');
+                                    if (loadingBubble) loadingBubble.remove();
+                                    appendMessage('ai', chunk.response);
+                                    return;
+                                }
+
+                                if (chunk.status === 'queued' || chunk.status === 'searching') {
+                                    const loadingMsg = document.querySelector(`#${loadingId} .content`);
+                                    if (loadingMsg) loadingMsg.innerHTML = chunk.response; 
+                                    streamResults(currentUser, loadingId);
+                                    return;
+                                }
+
+                                accumulated += chunk.response || "";
+
+                                if (!initialized) {
+                                    if (loadingBubble) {
+                                        loadingBubble.remove();
+                                        loadingBubble = null;
+                                    }
+                                    initialized = true;
+                                    aiMessageDiv = appendMessage('ai', accumulated, userPromptSensitive);
+                                } else {
+                                    if (aiMessageDiv) {
+                                        const contentNode = aiMessageDiv.querySelector('.content');
+                                        if (contentNode) {
+                                            const warningNode = contentNode.querySelector('.safety-warning');
+                                            let warningHtml = "";
+                                            if (warningNode) {
+                                                warningHtml = warningNode.outerHTML;
+                                            }
+                                            contentNode.innerHTML = warningHtml + escapeHTML(accumulated).replace(/\n/g, '<br>');
+                                        }
+                                    }
+                                    scrollToBottom();
+                                }
+                            } catch (e) {
+                                console.error("Error parsing JSON chunk:", e);
+                            }
+                        }
+                    }
+                }
             }
-
-            // Handle Queued/Searching Status (Async)
-            if (data.status === 'queued' || data.status === 'searching') {
-                // Keep the loading indicator and start streaming
-                const loadingMsg = document.querySelector(`#${loadingId} .content`);
-                if (loadingMsg) loadingMsg.innerHTML = data.response; 
-                streamResults(currentUser, loadingId);
-                return;
-            }
-
-            // Add real response
-            const loadingBubble = document.getElementById(loadingId);
-            if (loadingBubble) loadingBubble.remove();
-            
-            appendMessage('ai', data.response, userPromptSensitive);
         } catch (error) {
             clearTimeout(timeoutId);
             console.error("Error communicating with server:", error);
