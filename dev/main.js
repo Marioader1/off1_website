@@ -780,7 +780,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                 if (chunk.status === 'queued') {
                                     const loadingMsg = document.querySelector(`#${loadingId} .content`);
-                                    if (loadingMsg) loadingMsg.innerHTML = `⏳ All 6 inference slots full. You are <strong>Position #${chunk.position || 1}</strong> in queue (depth: ${chunk.queue_length || 1}). Next heartbeat in ${chunk.heartbeat_sec || 10}s...`;
+                                    if (loadingMsg) {
+                                        const modelDisplayNames = {
+                                            "gemma4-e2b": "⚡ Fast Mode",
+                                            "gemma4-e2b-thinking": "💭 Thinking Mode",
+                                            "gemma4-e4b-thinking": "🧠 Pro Mode",
+                                            "gemma3-1b": "🚀 Turbo Mode"
+                                        };
+                                        const curLabel = modelDisplayNames[chunk.model] || chunk.model;
+                                        let text = `⏳ All inference slots full for <strong>${curLabel}</strong>. You are <strong>Position #${chunk.position || 1}</strong> in queue (depth: ${chunk.queue_length || 1}).`;
+                                        
+                                        // Sugggest alternatives if another model queue is shorter
+                                        if (chunk.alternatives && Object.keys(chunk.alternatives).length > 0) {
+                                            text += `<div style="margin-top: 0.6rem; padding: 0.6rem; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.8rem; border: 1px solid var(--glass-border);">`;
+                                            text += `<div style="color: #fbbf24; font-weight: 600; margin-bottom: 0.3rem;"><i class="fas fa-info-circle"></i> Shorter queue detected! Switch to skip the line:</div>`;
+                                            text += `<div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">`;
+                                            for (const [altModel, altLen] of Object.entries(chunk.alternatives)) {
+                                                const label = modelDisplayNames[altModel] || altModel;
+                                                text += `<button class="btn btn-secondary" onclick="transferQueueRequest('${chunk.req_id}', '${altModel}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; border-color: rgba(96,165,250,0.4);"><i class="fas fa-random"></i> Switch to ${label} (Queue: ${altLen})</button>`;
+                                            }
+                                            text += `</div></div>`;
+                                        }
+                                        loadingMsg.innerHTML = text;
+                                    }
                                     continue;
                                 }
 
@@ -1079,6 +1101,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('stat-requests').textContent = stats.requests || 0;
                 document.getElementById('stat-cpu').textContent = (stats.cpu || 0) + '%';
                 document.getElementById('stat-ram').textContent = (stats.ram || 0) + '%';
+                document.getElementById('stat-gpu').textContent = stats.gpu || 'N/A';
+                document.getElementById('stat-vram').textContent = stats.vram || 'N/A';
+
+                // Render Model Queues & Active Slots
+                const queuesContainer = document.getElementById('admin-model-queues');
+                if (queuesContainer && stats.queues && stats.active_slots_per_model) {
+                    let html = '';
+                    const modelDisplayNames = {
+                        "gemma4-e2b": "⚡ Fast Mode (Gemma 4 E2B)",
+                        "gemma4-e2b-thinking": "💭 Thinking Mode (Gemma 4 E2B)",
+                        "gemma4-e4b-thinking": "🧠 Pro Mode (Gemma 4 E4B)",
+                        "gemma3-1b": "🚀 Turbo Mode (Gemma 3 1B)"
+                    };
+                    
+                    for (const [key, qSize] of Object.entries(stats.queues)) {
+                        const activeCount = stats.active_slots_per_model[key] || 0;
+                        const label = modelDisplayNames[key] || key;
+                        html += `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.4rem; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div>
+                                    <strong style="color: #60a5fa;">${label}</strong>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.1rem;">
+                                        Active Slots: <span style="color: ${activeCount >= 2 ? '#ef4444' : '#10b981'}; font-weight: bold;">${activeCount}/2</span>
+                                    </div>
+                                </div>
+                                <span class="badge" style="background: ${qSize > 0 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.15)'}; color: ${qSize > 0 ? '#f59e0b' : '#10b981'}; border: 1px solid ${qSize > 0 ? '#f59e0b' : '#10b981'}; border-radius: 6px; padding: 0.2rem 0.5rem; font-weight: 600;">
+                                    Queue: ${qSize}
+                                </span>
+                            </div>
+                        `;
+                    }
+                    queuesContainer.innerHTML = html;
+                }
             } catch (e) {
                 console.error("Dashboard fetch error:", e);
             }
@@ -2170,6 +2225,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
     }
+
+    // Global Queue Transfer request handler (allows users to switch queues interactively)
+    window.transferQueueRequest = async (reqId, newModel) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/chat/queue/transfer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ req_id: reqId, new_model: newModel })
+            });
+            const result = await res.json();
+            if (res.ok) {
+                const loadingMsg = document.querySelector('.ai-message:last-child .content');
+                if (loadingMsg) {
+                    loadingMsg.innerHTML = `⚡ Transferring your prompt to the <strong>${newModel}</strong> queue...`;
+                }
+            } else {
+                alert("Queue transfer failed: " + (result.error || "Unknown error"));
+            }
+        } catch (e) {
+            console.error("Error during queue transfer:", e);
+        }
+    };
 
 });
 
