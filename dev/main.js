@@ -1953,6 +1953,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Pillar 6: Server State Synchronization & UI Locking / Unlocking
+        let isServerCurrentlyLocked = false;
+
         socket.on('server_state', (data) => {
             console.log("[Pillar 6 - State Sync]", data);
             const chatForm = document.getElementById('chat-form');
@@ -1963,12 +1965,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (chatForm) chatForm.classList.add('ui-locked-overlay');
                 if (chatInput) { chatInput.disabled = true; chatInput.placeholder = "🔒 Server restarting for system maintenance... queue draining."; }
                 if (sendBtn) sendBtn.disabled = true;
-                showToast("⚠️ Maintenance Alert", data.message || "Server entering drain state before system reboot.", false);
+                if (!isServerCurrentlyLocked) {
+                    showToast("⚠️ Maintenance Alert", data.message || "Server entering drain state before system reboot.", false);
+                    isServerCurrentlyLocked = true;
+                }
             } else if (data.state === 'online' || data.unlock_ui) {
                 if (chatForm) chatForm.classList.remove('ui-locked-overlay');
                 if (chatInput) { chatInput.disabled = false; chatInput.placeholder = "Type your message here..."; }
                 if (sendBtn) sendBtn.disabled = false;
-                showToast("🟢 Server Online", data.message || "System reboot completed. All UI controls unlocked.", false);
+                
+                // Only toast if transitioning from locked state or explicitly unlocking
+                if (isServerCurrentlyLocked || data.unlock_ui) {
+                    showToast("🟢 Server Online", data.message || "System reboot completed. All UI controls unlocked.", false);
+                    isServerCurrentlyLocked = false;
+                }
             }
         });
 
