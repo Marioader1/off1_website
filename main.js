@@ -788,7 +788,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                         };
                                         const cleanModel = chunk.model.includes("e2b") ? "gemma4-e2b" : (chunk.model.includes("e4b") ? "gemma4-e4b" : "gemma3-1b");
                                         const curLabel = modelDisplayNames[cleanModel] || chunk.model;
-                                        let text = `⏳ All inference slots full for <strong>${curLabel}</strong>. You are <strong>Position #${chunk.position || 1}</strong> in queue (depth: ${chunk.queue_length || 1}).`;
+                                        const estMin = Math.round((chunk.estimated_wait_sec || 0) / 60);
+                                        const estStr = estMin > 0 ? `~${estMin}m` : `~${chunk.estimated_wait_sec || 0}s`;
+                                        let text = `⏳ All inference slots full for <strong>${curLabel}</strong>. You are <strong>Position #${chunk.position || 1}</strong> in queue (depth: ${chunk.queue_length || 1}). Est. Wait: <strong style="color: #60a5fa;">${estStr}</strong>.`;
                                         
                                         // Suggest alternatives if another model queue is shorter
                                         if (chunk.alternatives && Object.keys(chunk.alternatives).length > 0) {
@@ -1114,7 +1116,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         "gemma3-1b": "🚀 Turbo Mode (Gemma 3 1B)"
                     };
                     
-                    for (const [key, qSize] of Object.entries(stats.queues)) {
+                    for (const [key, qData] of Object.entries(stats.queues)) {
+                        const qSize = qData.size || 0;
+                        const waitSec = qData.total_wait_sec || 0;
+                        const waitMin = Math.round(waitSec / 60);
+                        const waitStr = waitMin > 0 ? `${waitMin}m` : `${waitSec}s`;
+                        
                         const activeCount = stats.active_slots_per_model[key] || 0;
                         const label = modelDisplayNames[key] || key;
                         html += `
@@ -1125,9 +1132,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                         Active Slots: <span style="color: ${activeCount >= 2 ? '#ef4444' : '#10b981'}; font-weight: bold;">${activeCount}/2</span>
                                     </div>
                                 </div>
-                                <span class="badge" style="background: ${qSize > 0 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.15)'}; color: ${qSize > 0 ? '#f59e0b' : '#10b981'}; border: 1px solid ${qSize > 0 ? '#f59e0b' : '#10b981'}; border-radius: 6px; padding: 0.2rem 0.5rem; font-weight: 600;">
-                                    Queue: ${qSize}
-                                </span>
+                                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem;">
+                                    <span class="badge" style="background: ${qSize > 0 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.15)'}; color: ${qSize > 0 ? '#f59e0b' : '#10b981'}; border: 1px solid ${qSize > 0 ? '#f59e0b' : '#10b981'}; border-radius: 6px; padding: 0.2rem 0.5rem; font-weight: 600;">
+                                        Queue: ${qSize}
+                                    </span>
+                                    ${qSize > 0 ? `<span style="font-size: 0.75rem; color: #fbbf24; font-weight: 500;">~${waitStr} wait</span>` : ''}
+                                </div>
                             </div>
                         `;
                     }
