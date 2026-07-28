@@ -1996,15 +1996,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (overrideTimerInterval) clearInterval(overrideTimerInterval);
                 if (data.target_utc_timestamp) {
-                    overrideTimerInterval = setInterval(() => {
+                    const updateTimer = () => {
                         const now = new Date().getTime();
                         const target = new Date(data.target_utc_timestamp).getTime();
                         const diff = Math.max(0, Math.floor((target - now) / 1000));
                         const mins = Math.floor(diff / 60).toString().padStart(2, '0');
                         const secs = (diff % 60).toString().padStart(2, '0');
                         if (timerSpan) timerSpan.textContent = `${mins}:${secs}`;
-                        if (diff === 0) clearInterval(overrideTimerInterval);
-                    }, 1000);
+                        if (diff === 0 && overrideTimerInterval) {
+                            clearInterval(overrideTimerInterval);
+                        }
+                    };
+                    updateTimer(); // Tick immediately to avoid "00:00" freeze/lag
+                    overrideTimerInterval = setInterval(updateTimer, 1000);
                 }
             } else if (data.type === 'toast') {
                 showToast(
