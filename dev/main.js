@@ -1958,7 +1958,7 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.on('server_state', (data) => {
             console.log("[Pillar 6 - State Sync]", data);
             const chatForm = document.getElementById('chat-form');
-            const chatInput = document.getElementById('chat-input');
+            const chatInput = document.getElementById('user-input');
             const sendBtn = document.getElementById('send-btn');
 
             if (data.state === 'drain' || data.lock_ui) {
