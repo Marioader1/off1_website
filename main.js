@@ -1105,6 +1105,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('stat-ram').textContent = (stats.ram || 0) + '%';
                 document.getElementById('stat-gpu').textContent = stats.gpu || 'N/A';
                 document.getElementById('stat-vram').textContent = stats.vram || 'N/A';
+                const totalQ = stats.total_queue || 0;
+                document.getElementById('stat-total-queue').textContent = totalQ + (totalQ >= 100 ? " ⚠️ (High Demand Mode Active)" : "");
 
                 // Render Model Queues & Active Slots
                 const queuesContainer = document.getElementById('admin-model-queues');
