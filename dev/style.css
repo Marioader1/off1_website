@@ -565,6 +565,9 @@ body {
     opacity: 1;
     transition: opacity 0.3s ease;
 }
+.hidden {
+    display: none !important;
+}
 
 .modal-overlay.hidden {
     display: none;
