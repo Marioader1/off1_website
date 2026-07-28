@@ -782,15 +782,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                     const loadingMsg = document.querySelector(`#${loadingId} .content`);
                                     if (loadingMsg) {
                                         const modelDisplayNames = {
-                                            "gemma4-e2b": "⚡ Fast Mode",
-                                            "gemma4-e2b-thinking": "💭 Thinking Mode",
-                                            "gemma4-e4b-thinking": "🧠 Pro Mode",
-                                            "gemma3-1b": "🚀 Turbo Mode"
+                                            "gemma4-e2b": "⚡ Fast / Thinking Mode (E2B)",
+                                            "gemma4-e4b": "🧠 Pro Mode (E4B)",
+                                            "gemma3-1b": "🚀 Turbo Mode (1B)"
                                         };
-                                        const curLabel = modelDisplayNames[chunk.model] || chunk.model;
+                                        const cleanModel = chunk.model.includes("e2b") ? "gemma4-e2b" : (chunk.model.includes("e4b") ? "gemma4-e4b" : "gemma3-1b");
+                                        const curLabel = modelDisplayNames[cleanModel] || chunk.model;
                                         let text = `⏳ All inference slots full for <strong>${curLabel}</strong>. You are <strong>Position #${chunk.position || 1}</strong> in queue (depth: ${chunk.queue_length || 1}).`;
                                         
-                                        // Sugggest alternatives if another model queue is shorter
+                                        // Suggest alternatives if another model queue is shorter
                                         if (chunk.alternatives && Object.keys(chunk.alternatives).length > 0) {
                                             text += `<div style="margin-top: 0.6rem; padding: 0.6rem; background: rgba(0,0,0,0.3); border-radius: 8px; font-size: 0.8rem; border: 1px solid var(--glass-border);">`;
                                             text += `<div style="color: #fbbf24; font-weight: 600; margin-bottom: 0.3rem;"><i class="fas fa-info-circle"></i> Shorter queue detected! Switch to skip the line:</div>`;
@@ -1109,9 +1109,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (queuesContainer && stats.queues && stats.active_slots_per_model) {
                     let html = '';
                     const modelDisplayNames = {
-                        "gemma4-e2b": "⚡ Fast Mode (Gemma 4 E2B)",
-                        "gemma4-e2b-thinking": "💭 Thinking Mode (Gemma 4 E2B)",
-                        "gemma4-e4b-thinking": "🧠 Pro Mode (Gemma 4 E4B)",
+                        "gemma4-e2b": "⚡ Fast / Thinking (Gemma 4 E2B)",
+                        "gemma4-e4b": "🧠 Pro Mode (Gemma 4 E4B)",
                         "gemma3-1b": "🚀 Turbo Mode (Gemma 3 1B)"
                     };
                     
