@@ -317,63 +317,27 @@
     </div>
 
     <div id="admin-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
-        <div class="modal-content glass-panel" style="max-width: 900px; text-align: left;">
+        <div class="modal-content glass-panel" style="max-width: 1000px; text-align: left;">
             <h2 class="glow-text" style="color: #fbbf24;">Admin Dashboard</h2>
-            <div id="admin-stats" style="margin-top: 1.5rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                <div class="stat-box"><span>Uptime:</span> <strong id="stat-uptime">Loading...</strong></div>
-                <div class="stat-box"><span>Requests:</span> <strong id="stat-requests">...</strong></div>
-                <div class="stat-box"><span>CPU:</span> <strong id="stat-cpu">...</strong></div>
-                <div class="stat-box"><span>RAM:</span> <strong id="stat-ram">...</strong></div>
-                <div class="stat-box"><span>GPU:</span> <strong id="stat-gpu">...</strong></div>
-                <div class="stat-box"><span>VRAM:</span> <strong id="stat-vram">...</strong></div>
-            </div>
-
-            <!-- Model Instances & Queues Section -->
-            <div style="margin-top: 1.25rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; border: 1px solid var(--glass-border);">
-                <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-primary);"><i class="fas fa-tasks"></i> Model Instances & Queues</h3>
-                <div id="admin-model-queues" style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
-                    <!-- Populated dynamically via JS -->
-                </div>
-            </div>
             
-            <!-- Speed Test Section -->
-            <div style="margin-top: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; border: 1px solid var(--glass-border);">
-                <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-primary);">Network Speed Test</h3>
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <button id="run-speedtest-btn" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Run Test</button>
-                    <span id="speedtest-status" style="font-size: 0.85rem; color: var(--text-secondary);">Ready to test</span>
-                </div>
-                <div id="speedtest-results" class="hidden" style="margin-top: 1rem; display: flex; gap: 1rem; text-align: center;">
-                    <div style="flex: 1;">
-                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Ping</span>
-                        <div id="st-ping" style="font-weight: 600; color: #10b981;">-- ms</div>
-                    </div>
-                    <div style="flex: 1; border-left: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border);">
-                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Download</span>
-                        <div id="st-dl" style="font-weight: 600; color: var(--primary-color);">-- Mbps</div>
-                    </div>
-                    <div style="flex: 1;">
-                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Upload</span>
-                        <div id="st-ul" style="font-weight: 600; color: var(--accent-color);">-- Mbps</div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; margin-top: 1.5rem;">
+                <!-- Left Section: Stats (3 columns of 5) -->
+                <div style="grid-column: span 3; display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div id="admin-stats" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                        <div class="stat-box"><span>Uptime:</span> <strong id="stat-uptime">Loading...</strong></div>
+                        <div class="stat-box"><span>Requests:</span> <strong id="stat-requests">...</strong></div>
+                        <div class="stat-box"><span>CPU:</span> <strong id="stat-cpu">...</strong></div>
+                        <div class="stat-box"><span>RAM:</span> <strong id="stat-ram">...</strong></div>
+                        <div class="stat-box"><span>GPU:</span> <strong id="stat-gpu">...</strong></div>
+                        <div class="stat-box"><span>VRAM:</span> <strong id="stat-vram">...</strong></div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Client Speed Test Section -->
-            <div style="margin-top: 1rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; border: 1px solid var(--glass-border);">
-                <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-primary);">Client Speed Test</h3>
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <button id="run-client-test-btn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Test My Speed</button>
-                    <span id="client-test-status" style="font-size: 0.85rem; color: var(--text-secondary);">Ready</span>
-                </div>
-                <div id="client-test-results" class="hidden" style="margin-top: 1rem; display: flex; gap: 1rem; text-align: center;">
-                    <div style="flex: 1;">
-                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Latency</span>
-                        <div id="ct-ping" style="font-weight: 600; color: #10b981;">-- ms</div>
-                    </div>
-                    <div style="flex: 1; border-left: 1px solid var(--glass-border);">
-                        <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary);">Download</span>
-                        <div id="ct-dl" style="font-weight: 600; color: var(--primary-color);">-- Mbps</div>
+                <!-- Right Section: Model Instances & Queues (2 columns of 5) -->
+                <div style="grid-column: span 2; background: rgba(0,0,0,0.2); padding: 1.25rem; border-radius: 10px; border: 1px solid var(--glass-border); align-self: start;">
+                    <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-primary);"><i class="fas fa-tasks"></i> Model Instances & Queues</h3>
+                    <div id="admin-model-queues" style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
+                        <!-- Populated dynamically via JS -->
                     </div>
                 </div>
             </div>
