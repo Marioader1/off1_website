@@ -10,6 +10,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <!-- Pillar 4: Two-Tier Broadcast System - Tier 2 Persistent Critical Override Banner -->
+    <div id="critical-override-banner" class="critical-banner hidden">
+        <div class="critical-banner-content">
+            <span class="critical-icon">🚨</span>
+            <strong id="critical-title">SYSTEM ALERT:</strong>
+            <span id="critical-msg">Server maintenance in progress.</span>
+            <span class="countdown-badge" id="critical-countdown-badge">Time remaining: <strong id="critical-timer">00:00</strong></span>
+        </div>
+    </div>
+
+    <!-- Pillar 4: Two-Tier Broadcast System - Tier 1 Standard Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
     <div class="experimental-banner">
         <span>⚠️ Experimental Stage: Server and website are currently in development.</span>
     </div>
@@ -302,6 +315,41 @@
                 </div>
             </div>
 
+            <!-- Pillar 4: Two-Tier Broadcast System Controls -->
+            <div style="margin-top: 1rem; background: rgba(0,0,0,0.25); padding: 1rem; border-radius: 10px; border: 1px solid var(--glass-border);">
+                <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: #3b82f6;"><i class="fas fa-bullhorn"></i> Two-Tier Broadcast Alert Manager</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <select id="broadcast-tier-select" style="flex: 1; padding: 0.5rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 6px;">
+                            <option value="toast">Tier 1: Dismissible Toast (GoFundMe / Links)</option>
+                            <option value="critical_override">Tier 2: Persistent Critical Override (Countdown)</option>
+                        </select>
+                        <input type="number" id="broadcast-timer-input" placeholder="Min" value="10" title="Countdown duration in minutes (Tier 2 only)" style="width: 70px; padding: 0.5rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 6px;">
+                    </div>
+                    <input type="text" id="broadcast-message-input" placeholder="Enter broadcast notification or warning text..." style="width: 100%; padding: 0.6rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 6px;">
+                    <div id="toast-extra-fields" style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="toast-action-text" placeholder="Button Text (e.g. Donate Now)" value="Support on GoFundMe" style="flex: 1; padding: 0.5rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 6px;">
+                        <input type="text" id="toast-link-url" placeholder="Link URL" value="https://gofundme.com/" style="flex: 2; padding: 0.5rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 6px;">
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                        <button id="btn-send-broadcast" class="btn btn-primary" style="flex: 2; padding: 0.5rem; background: #3b82f6;"><i class="fas fa-paper-plane"></i> Dispatch Broadcast</button>
+                        <button id="btn-clear-override" class="btn btn-secondary" style="flex: 1; padding: 0.5rem; border-color: #ef4444; color: #ef4444;"><i class="fas fa-ban"></i> Clear Override</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pillar 6: Graceful System Reboot & Queue Drain Controls -->
+            <div style="margin-top: 1rem; background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.4);">
+                <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: #ef4444;"><i class="fas fa-power-off"></i> Graceful System Reboot & Drain</h3>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Schedules a synchronized UTC countdown. Upon 0:00, enters Drain mode, locks all connected UIs, drains active slots and queue, then reboots OS.</p>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <input type="number" id="reboot-countdown-sec" value="60" title="Countdown duration in seconds" style="width: 80px; padding: 0.5rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px;">
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">seconds</span>
+                    <input type="text" id="reboot-reason" placeholder="Reason (e.g., GPU ROCm patch)" value="Hardware OS & GPU Driver Patch Reboot" style="flex: 1; padding: 0.5rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px;">
+                </div>
+                <button id="btn-trigger-reboot" class="btn btn-primary" style="width: 100%; margin-top: 0.75rem; background: #ef4444; color: white; font-weight: 600;"><i class="fas fa-sync-alt"></i> Schedule Graceful Drain & OS Reboot</button>
+            </div>
+
             <div style="margin-top: 2rem; display: flex; gap: 1rem;">
                 <button id="close-admin-btn" class="btn btn-secondary" style="width: 100%;">Close Panel</button>
             </div>
@@ -417,6 +465,8 @@
         </div>
     </div>
 
+    <!-- Socket.IO client library for Pillar 2 bi-directional control WebSockets -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="main.js"></script>
 
     <!-- Vercel Web Analytics & Speed Insights -->

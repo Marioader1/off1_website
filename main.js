@@ -677,7 +677,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Visually clear immediately so it feels fast
             clearAttachment();
 
-            const response = await fetch(`${API_BASE_URL}/api/chat`, {
+            // Pillar 2/3: Route standard prompts to dedicated SSE streaming pipe, fallback to /api/chat for file uploads
+            const hasFiles = fileUploadInput && fileUploadInput.files && fileUploadInput.files.length > 0;
+            const chatEndpoint = hasFiles ? `${API_BASE_URL}/api/chat` : `${API_BASE_URL}/api/chat/sse`;
+
+            const response = await fetch(chatEndpoint, {
                 method: 'POST',
                 headers: {
                     'ngrok-skip-browser-warning': 'true'
@@ -746,10 +750,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     buffer = lines.pop();
 
                     for (const line of lines) {
-                        const cleanLine = line.trim();
-                        if (cleanLine) {
+                        let cleanLine = line.trim();
+                        if (cleanLine.startsWith("data: ")) {
+                            cleanLine = cleanLine.substring(6).trim();
+                        }
+                        if (cleanLine && cleanLine !== "[DONE]") {
                             try {
                                 const chunk = JSON.parse(cleanLine);
+
+                                if (chunk.status === 'error' || chunk.status === 'drain') {
+                                    if (loadingBubble) { loadingBubble.remove(); loadingBubble = null; }
+                                    appendMessage('ai', "⚠️ Server Notification: " + (chunk.error || "Server in maintenance drain state."));
+                                    return;
+                                }
 
                                 if (chunk.status === 'busy') {
                                     busyModal.classList.remove('hidden');
@@ -758,14 +771,34 @@ document.addEventListener('DOMContentLoaded', () => {
                                     return;
                                 }
 
-                                if (chunk.status === 'queued' || chunk.status === 'searching') {
+                                if (chunk.status === 'searching') {
                                     const loadingMsg = document.querySelector(`#${loadingId} .content`);
                                     if (loadingMsg) loadingMsg.innerHTML = chunk.response; 
                                     streamResults(currentUser, loadingId);
                                     return;
                                 }
 
-                                accumulated += chunk.response || "";
+                                if (chunk.status === 'queued') {
+                                    const loadingMsg = document.querySelector(`#${loadingId} .content`);
+                                    if (loadingMsg) loadingMsg.innerHTML = `⏳ All 6 inference slots full. You are <strong>Position #${chunk.position || 1}</strong> in queue (depth: ${chunk.queue_length || 1}). Next heartbeat in ${chunk.heartbeat_sec || 10}s...`;
+                                    continue;
+                                }
+
+                                if (chunk.status === 'handoff') {
+                                    const loadingMsg = document.querySelector(`#${loadingId} .content`);
+                                    if (loadingMsg) loadingMsg.innerHTML = `⚡ <strong>Slot Open! Zero-Delay Handoff executed.</strong> Receiving tokens...`;
+                                    continue;
+                                }
+
+                                if (chunk.status === 'completed') {
+                                    done = true;
+                                    break;
+                                }
+
+                                const tokenChunk = chunk.token !== undefined ? chunk.token : (chunk.response || "");
+                                if (!tokenChunk && chunk.status !== 'streaming' && !chunk.done) continue;
+
+                                accumulated += tokenChunk;
 
                                 if (!initialized) {
                                     if (loadingBubble) {
@@ -1899,6 +1932,227 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     cipherCodeInput.style.borderColor = 'var(--accent-color)';
                 }, 1000);
+            }
+        };
+    }
+
+    // ==========================================
+    // --- 6 ARCHITECTURAL PILLARS INTEGRATION ---
+    // ==========================================
+    let overrideTimerInterval = null;
+
+    // Pillar 2: Bi-Directional WebSocket Control Pipe
+    if (typeof io !== 'undefined') {
+        const socket = io(API_BASE_URL, {
+            transports: ['websocket', 'polling'],
+            reconnectionAttempts: 5
+        });
+
+        socket.on('connect', () => {
+            console.log("[Pillar 2 - WebSockets] Bi-directional control pipe connected:", socket.id);
+        });
+
+        // Pillar 6: Server State Synchronization & UI Locking / Unlocking
+        socket.on('server_state', (data) => {
+            console.log("[Pillar 6 - State Sync]", data);
+            const chatForm = document.getElementById('chat-form');
+            const chatInput = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('send-btn');
+
+            if (data.state === 'drain' || data.lock_ui) {
+                if (chatForm) chatForm.classList.add('ui-locked-overlay');
+                if (chatInput) { chatInput.disabled = true; chatInput.placeholder = "🔒 Server restarting for system maintenance... queue draining."; }
+                if (sendBtn) sendBtn.disabled = true;
+                showToast("⚠️ Maintenance Alert", data.message || "Server entering drain state before system reboot.", false);
+            } else if (data.state === 'online' || data.unlock_ui) {
+                if (chatForm) chatForm.classList.remove('ui-locked-overlay');
+                if (chatInput) { chatInput.disabled = false; chatInput.placeholder = "Type your message here..."; }
+                if (sendBtn) sendBtn.disabled = false;
+                showToast("🟢 Server Online", data.message || "System reboot completed. All UI controls unlocked.", false);
+            }
+        });
+
+        // Pillar 5: Automated High-Demand Mitigation Alerts
+        socket.on('status_change', (data) => {
+            console.log("[Pillar 5 - Load Telemetry]", data);
+            if (data.status === 'high_demand') {
+                showToast("⚠️ High Server Traffic", `Queue depth at ${data.queue_length} users. System automatically switched to concise reply mode to accelerate queue processing.`, true, true);
+            } else if (data.status === 'normal') {
+                showToast("🟢 Traffic Normalized", "Server queue subsided. Normal verbose conversational mode restored.", true, false);
+            }
+        });
+
+        // Pillar 4: Two-Tier Broadcast System Handler
+        socket.on('broadcast', (data) => {
+            console.log("[Pillar 4 - Broadcast Received]", data);
+            if (data.type === 'critical_override') {
+                const banner = document.getElementById('critical-override-banner');
+                const title = document.getElementById('critical-title');
+                const msg = document.getElementById('critical-msg');
+                const timerSpan = document.getElementById('critical-timer');
+                if (title && data.title) title.textContent = data.title + ":";
+                if (msg) msg.textContent = data.message;
+                if (banner) banner.classList.remove('hidden');
+
+                if (overrideTimerInterval) clearInterval(overrideTimerInterval);
+                if (data.target_utc_timestamp) {
+                    overrideTimerInterval = setInterval(() => {
+                        const now = new Date().getTime();
+                        const target = new Date(data.target_utc_timestamp).getTime();
+                        const diff = Math.max(0, Math.floor((target - now) / 1000));
+                        const mins = Math.floor(diff / 60).toString().padStart(2, '0');
+                        const secs = (diff % 60).toString().padStart(2, '0');
+                        if (timerSpan) timerSpan.textContent = `${mins}:${secs}`;
+                        if (diff === 0) clearInterval(overrideTimerInterval);
+                    }, 1000);
+                }
+            } else if (data.type === 'toast') {
+                showToast(
+                    "📢 System Announcement",
+                    data.message,
+                    data.dismissible !== false,
+                    false,
+                    data.action_text,
+                    data.link
+                );
+            }
+        });
+
+        socket.on('broadcast_clear', (data) => {
+            if (data && data.type === 'critical_override') {
+                const banner = document.getElementById('critical-override-banner');
+                if (banner) banner.classList.add('hidden');
+                if (overrideTimerInterval) clearInterval(overrideTimerInterval);
+            }
+        });
+    }
+
+    // Helper: Toast Notification Generator
+    function showToast(title, body, dismissible = true, isHighDemand = false, actionText = null, actionLink = null) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast-alert${isHighDemand ? ' high-demand' : ''}`;
+        
+        let html = `
+            <div class="toast-header">
+                <span>${escapeHTML(title)}</span>
+                ${dismissible ? '<button class="toast-btn dismiss" style="padding:0.2rem 0.5rem;border:none;">&times;</button>' : ''}
+            </div>
+            <div class="toast-body">${escapeHTML(body)}</div>
+        `;
+        
+        if (actionText && actionLink) {
+            html += `
+                <div class="toast-actions">
+                    <a href="${actionLink}" target="_blank" rel="noopener noreferrer" class="toast-btn primary">${escapeHTML(actionText)} <i class="fas fa-external-link-alt"></i></a>
+                </div>
+            `;
+        }
+        
+        toast.innerHTML = html;
+        container.appendChild(toast);
+
+        if (dismissible) {
+            const btn = toast.querySelector('.dismiss');
+            if (btn) btn.onclick = () => { toast.remove(); };
+            setTimeout(() => { if (toast.parentNode) toast.remove(); }, 12000);
+        }
+    }
+
+    // --- Pillar 4 & 6 Admin Dashboard Event Bindings ---
+    const tierSelect = document.getElementById('broadcast-tier-select');
+    const timerInput = document.getElementById('broadcast-timer-input');
+    const toastFields = document.getElementById('toast-extra-fields');
+    if (tierSelect) {
+        tierSelect.addEventListener('change', () => {
+            if (tierSelect.value === 'critical_override') {
+                if (timerInput) timerInput.style.display = 'block';
+                if (toastFields) toastFields.style.display = 'none';
+            } else {
+                if (timerInput) timerInput.style.display = 'none';
+                if (toastFields) toastFields.style.display = 'flex';
+            }
+        });
+        if (timerInput) timerInput.style.display = 'none';
+    }
+
+    const btnSendBroadcast = document.getElementById('btn-send-broadcast');
+    if (btnSendBroadcast) {
+        btnSendBroadcast.onclick = async () => {
+            const tier = tierSelect ? tierSelect.value : 'toast';
+            const msgInput = document.getElementById('broadcast-message-input');
+            const message = msgInput ? msgInput.value.trim() : '';
+            if (!message) { alert("Please enter a broadcast message!"); return; }
+
+            let payload = { tier, message };
+            if (tier === 'critical_override') {
+                const mins = parseInt(timerInput ? timerInput.value : '10') || 10;
+                const targetUtc = new Date(Date.now() + mins * 60000).toISOString();
+                payload.target_utc = targetUtc;
+            } else {
+                const actionText = document.getElementById('toast-action-text')?.value || '';
+                const linkUrl = document.getElementById('toast-link-url')?.value || '';
+                if (actionText) payload.action_text = actionText;
+                if (linkUrl) payload.link = linkUrl;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/broadcast`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('off1_token')}` },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    alert(`✅ Broadcast emitted globally (${tier})!`);
+                    if (msgInput) msgInput.value = '';
+                } else {
+                    alert("Error sending broadcast: " + (result.message || "Unauthorized"));
+                }
+            } catch (e) {
+                alert("Failed to emit broadcast: " + e.message);
+            }
+        };
+    }
+
+    const btnClearOverride = document.getElementById('btn-clear-override');
+    if (btnClearOverride) {
+        btnClearOverride.onclick = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/clear_override`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('off1_token')}` }
+                });
+                if (res.ok) alert("🧹 Critical Override Banner cleared across all client devices!");
+            } catch (e) {
+                alert("Failed to clear override: " + e.message);
+            }
+        };
+    }
+
+    const btnTriggerReboot = document.getElementById('btn-trigger-reboot');
+    if (btnTriggerReboot) {
+        btnTriggerReboot.onclick = async () => {
+            const seconds = parseInt(document.getElementById('reboot-countdown-sec')?.value || '60') || 60;
+            const reason = document.getElementById('reboot-reason')?.value || 'System maintenance & driver restart';
+            
+            if (!confirm(`🚨 WARNING: Are you sure you want to schedule a full server queue drain and operating system reboot in ${seconds} seconds?`)) return;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/schedule_restart`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('off1_token')}` },
+                    body: JSON.stringify({ countdown_seconds: seconds, reason })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`⚡ Reboot sequence scheduled! Server entering Drain mode in ${seconds}s.`);
+                } else {
+                    alert("Error scheduling reboot: " + data.message);
+                }
+            } catch (e) {
+                alert("Failed to schedule reboot: " + e.message);
             }
         };
     }
