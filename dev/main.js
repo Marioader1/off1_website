@@ -2375,7 +2375,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 🚀 Easter Egg Puzzle: Cipher Vault Terminal (SWIFT)
     const logoHeader = document.querySelector('.logo-container .logo');
-    const modelSelect = document.getElementById('model-select');
     const secretVaultModal = document.getElementById('secret-vault-modal');
     const cipherCodeInput = document.getElementById('cipher-code-input');
     const cipherSubmitBtn = document.getElementById('cipher-submit-btn');
