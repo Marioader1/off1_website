@@ -521,7 +521,14 @@
                             <option value="5256000">🗓️ 10 Years</option>
                             <option value="perm" selected>⛔ Permanent Ban</option>
                         </select>
-                        <input type="text" id="manual-ban-reason" placeholder="Reason for ban" value="Manual administrator enforcement" style="padding: 0.5rem 0.7rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid rgba(239,68,68,0.4); border-radius: 6px; font-size: 0.85rem;">
+                        <input type="text" id="manual-ban-reason" list="ban-reason-presets" placeholder="Reason for ban" value="Manual administrator enforcement" style="padding: 0.5rem 0.7rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid rgba(239,68,68,0.4); border-radius: 6px; font-size: 0.85rem;">
+                        <datalist id="ban-reason-presets">
+                            <option value="Admin Abuse - Rank Stripped to 0 & Banned by Owner">
+                            <option value="Manual administrator enforcement">
+                            <option value="Malicious Scraper / Bot Network Activity">
+                            <option value="Repeated Policy Violations / Severe Toxicity">
+                            <option value="Security Threat / Unauthorized Exploitation Attempt">
+                        </datalist>
                         <button type="button" id="btn-execute-ban" class="btn btn-primary" style="padding: 0.5rem 0.8rem; background: #ef4444; color: white; font-weight: 700; font-size: 0.82rem; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; box-shadow: 0 0 12px rgba(239,68,68,0.4);">
                             <i class="fas fa-skull"></i> <span>Execute Ban</span>
                         </button>
