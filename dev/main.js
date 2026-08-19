@@ -29,6 +29,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailStatus = document.getElementById('email-status');
     const logoutBtn = document.getElementById('logout-btn');
 
+    function updateUserHeader() {
+        const currentU = localStorage.getItem('off1_username') || 'Guest';
+        if (displayUsername && currentU) {
+            if (userInitial) userInitial.textContent = currentU.charAt(0).toUpperCase();
+            
+            const userEmail = localStorage.getItem('off1_email');
+            const roleRank = parseInt(localStorage.getItem('off1_role_rank') || '0');
+
+            if (currentU === 'Guest') {
+                displayUsername.textContent = 'Guest';
+                if (emailStatus) emailStatus.textContent = '';
+            } else {
+                if (roleRank === 2) {
+                    displayUsername.innerHTML = `${currentU} <span class="owner-badge">OWNER ⭐</span>`;
+                } else if (roleRank === 1) {
+                    displayUsername.innerHTML = `${currentU} <span class="admin-badge">ADMIN 👑</span>`;
+                } else {
+                    displayUsername.textContent = currentU;
+                }
+
+                if (!userEmail || userEmail === '') {
+                    if (emailStatus) {
+                        emailStatus.innerHTML = '<span class="email-warning" id="setup-email-btn">Set up email</span>';
+                        const setupBtn = document.getElementById('setup-email-btn');
+                        if (setupBtn) {
+                            setupBtn.addEventListener('click', () => {
+                                const newEmail = prompt('Please enter your email to secure your account and allow password resets:');
+                                if (newEmail && newEmail.includes('@')) {
+                                    updateUserEmail(newEmail);
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    if (emailStatus) {
+                        emailStatus.textContent = 'Email Verified ✓';
+                        emailStatus.style.color = '#10b981';
+                    }
+                }
+            }
+        }
+    }
+    updateUserHeader();
+
     // New v0.8.0 Elements
     const btnThemeToggle = document.getElementById('btn-theme-toggle');
     const attachmentBtn = document.getElementById('attachment-btn');
@@ -308,41 +352,45 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    deleteNoBtn.addEventListener('click', () => {
-        deleteModal.classList.add('hidden');
-        deleteStep = 0;
-    });
+    if (deleteNoBtn) {
+        deleteNoBtn.addEventListener('click', () => {
+            if (deleteModal) deleteModal.classList.add('hidden');
+            deleteStep = 0;
+        });
+    }
 
-    deleteYesBtn.addEventListener('click', async () => {
-        if (deleteStep < 3) {
-            deleteStep++;
-            updateDeleteModal();
-        } else {
-            // Final Step - Perform Deletion
-            deleteYesBtn.disabled = true;
-            deleteYesBtn.textContent = 'Deleting...';
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/delete_account`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-                    body: JSON.stringify({ username: currentUser })
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    alert('Your account has been deleted.');
-                    performLogout(true);
-                } else {
-                    alert('Error: ' + data.message);
-                    deleteModal.classList.add('hidden');
+    if (deleteYesBtn) {
+        deleteYesBtn.addEventListener('click', async () => {
+            if (deleteStep < 3) {
+                deleteStep++;
+                updateDeleteModal();
+            } else {
+                // Final Step - Perform Deletion
+                deleteYesBtn.disabled = true;
+                deleteYesBtn.textContent = 'Deleting...';
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/delete_account`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                        body: JSON.stringify({ username: currentUser })
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        alert('Your account has been deleted.');
+                        performLogout(true);
+                    } else {
+                        alert('Error: ' + data.message);
+                        if (deleteModal) deleteModal.classList.add('hidden');
+                    }
+                } catch (e) {
+                    alert('Connection failed.');
+                    if (deleteModal) deleteModal.classList.add('hidden');
+                } finally {
+                    deleteYesBtn.disabled = false;
                 }
-            } catch (e) {
-                alert('Connection failed.');
-                deleteModal.classList.add('hidden');
-            } finally {
-                deleteYesBtn.disabled = false;
             }
-        }
-    });
+        });
+    }
 
     function updateDeleteModal() {
         // Reset button order to default first
