@@ -495,19 +495,30 @@
                         </select>
                         <input type="text" id="manual-ban-target" placeholder="Username or IP Address" style="padding: 0.5rem 0.7rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid rgba(239,68,68,0.4); border-radius: 6px; font-family: monospace; font-size: 0.85rem;">
                         <select id="manual-ban-duration" style="padding: 0.5rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid rgba(239,68,68,0.4); border-radius: 6px; font-size: 0.82rem;">
+                            <option value="1">⏱️ 1 Minute (Test)</option>
                             <option value="5">⏱️ 5 Minutes</option>
+                            <option value="10">⏱️ 10 Minutes</option>
                             <option value="15">⏱️ 15 Minutes</option>
                             <option value="30">⏱️ 30 Minutes</option>
+                            <option value="45">⏱️ 45 Minutes</option>
                             <option value="60">⏳ 1 Hour</option>
+                            <option value="120">⏳ 2 Hours</option>
                             <option value="180">⏳ 3 Hours</option>
                             <option value="360">⏳ 6 Hours</option>
                             <option value="720">⏳ 12 Hours</option>
                             <option value="1440">📅 1 Day (24h)</option>
+                            <option value="2880">📅 2 Days (48h)</option>
                             <option value="4320">📅 3 Days</option>
+                            <option value="7200">📅 5 Days</option>
                             <option value="10080">🗓️ 1 Week (7d)</option>
                             <option value="20160">🗓️ 2 Weeks (14d)</option>
                             <option value="43200">🗓️ 1 Month (30d)</option>
-                            <option value="525600">🗓️ 1 Year</option>
+                            <option value="129600">🗓️ 3 Months (90d)</option>
+                            <option value="259200">🗓️ 6 Months (180d)</option>
+                            <option value="525600">🗓️ 1 Year (365d)</option>
+                            <option value="1051200">🗓️ 2 Years</option>
+                            <option value="2628000">🗓️ 5 Years</option>
+                            <option value="5256000">🗓️ 10 Years</option>
                             <option value="perm" selected>⛔ Permanent Ban</option>
                         </select>
                         <input type="text" id="manual-ban-reason" placeholder="Reason for ban" value="Manual administrator enforcement" style="padding: 0.5rem 0.7rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid rgba(239,68,68,0.4); border-radius: 6px; font-size: 0.85rem;">
