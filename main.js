@@ -171,6 +171,93 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Vanguard Defense Matrix: Banned Account Lockout Screen Check
+    function checkAndShowBannedLockout() {
+        const isBanned = localStorage.getItem('off1_is_banned') === 'true';
+        const lockoutScreen = document.getElementById('banned-lockout-screen');
+        if (!lockoutScreen) return;
+
+        if (isBanned) {
+            const username = localStorage.getItem('off1_username') || 'Account';
+            const reason = localStorage.getItem('off1_ban_reason') || 'Security violations detected by Vanguard Defense Matrix.';
+            const duration = localStorage.getItem('off1_ban_duration') || 'Active Enforcement';
+            const email = localStorage.getItem('off1_email') || '';
+
+            const unameElem = document.getElementById('lockout-username');
+            const reasonElem = document.getElementById('lockout-reason');
+            const durationElem = document.getElementById('lockout-duration');
+            const emailInput = document.getElementById('lockout-appeal-email');
+
+            if (unameElem) unameElem.textContent = username;
+            if (reasonElem) reasonElem.textContent = reason;
+            if (durationElem) durationElem.textContent = duration;
+            if (emailInput && !emailInput.value && email) emailInput.value = email;
+
+            lockoutScreen.classList.remove('hidden');
+        } else {
+            lockoutScreen.classList.add('hidden');
+        }
+    }
+    checkAndShowBannedLockout();
+
+    const btnLockoutAppeal = document.getElementById('btn-lockout-submit-appeal');
+    if (btnLockoutAppeal) {
+        btnLockoutAppeal.addEventListener('click', async () => {
+            const email = document.getElementById('lockout-appeal-email')?.value.trim() || '';
+            const statement = document.getElementById('lockout-appeal-statement')?.value.trim() || '';
+            const feedback = document.getElementById('lockout-appeal-feedback');
+            const username = localStorage.getItem('off1_username') || 'banned_user';
+
+            if (!statement) {
+                alert("Please provide a statement explaining why your enforcement should be reviewed.");
+                return;
+            }
+
+            btnLockoutAppeal.disabled = true;
+            btnLockoutAppeal.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Transmitting Appeal...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/appeal/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({
+                        entity_type: 'account',
+                        entity_id: username,
+                        contact_email: email,
+                        user_statement: statement
+                    })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    if (feedback) {
+                        feedback.className = 'appeal-success';
+                        feedback.style.background = 'rgba(16,185,129,0.15)';
+                        feedback.style.border = '1px solid #10b981';
+                        feedback.style.color = '#10b981';
+                        feedback.classList.remove('d-none');
+                        feedback.innerHTML = `✅ <strong>Appeal Transmitted!</strong><br>Your appeal (Case #${data.appeal_id}) was sent directly to the server owner for manual review.`;
+                    }
+                    btnLockoutAppeal.classList.add('d-none');
+                } else {
+                    alert("Appeal submission failed: " + (data.message || "Unknown error"));
+                    btnLockoutAppeal.disabled = false;
+                    btnLockoutAppeal.innerHTML = '<i class="fas fa-inbox"></i> Submit Appeal to Owner';
+                }
+            } catch (e) {
+                alert("Connection failed. Check your network or try again shortly.");
+                btnLockoutAppeal.disabled = false;
+                btnLockoutAppeal.innerHTML = '<i class="fas fa-inbox"></i> Submit Appeal to Owner';
+            }
+        });
+    }
+
+    const btnLockoutLogout = document.getElementById('btn-lockout-logout');
+    if (btnLockoutLogout) {
+        btnLockoutLogout.addEventListener('click', () => {
+            performLogout();
+        });
+    }
+
     // Role Sync: Check server for latest admin/owner status in background
     async function syncUserRole() {
         try {
@@ -179,6 +266,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({ username: currentUser, token: token, auto_sync: true }) 
             });
+            const data = await res.json();
+            
+            if (data.status === 'banned' || data.is_banned) {
+                localStorage.setItem('off1_is_banned', 'true');
+                if (data.ban_reason) localStorage.setItem('off1_ban_reason', data.ban_reason);
+                if (data.ban_duration) localStorage.setItem('off1_ban_duration', data.ban_duration);
+                if (data.contact_email) localStorage.setItem('off1_email', data.contact_email);
+                checkAndShowBannedLockout();
+                return;
+            }
+
             if (res.status === 401 || res.status === 403) {
                 localStorage.setItem('off1_username', 'Guest');
                 localStorage.setItem('off1_token', 'guest_session');
@@ -207,7 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 checkAndShowPwnedWarning();
                 return;
             }
-            const data = await res.json();
             if (data.status === 'success') {
                 const oldRank = localStorage.getItem('off1_role_rank');
                 
@@ -216,8 +313,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('off1_role_rank', data.role_rank || 0);
                 localStorage.setItem('off1_email', data.email || '');
                 localStorage.setItem('off1_pwned_count', data.pwned_count || 0);
+                localStorage.removeItem('off1_is_banned');
+                localStorage.removeItem('off1_ban_reason');
 
                 checkAndShowPwnedWarning();
+                checkAndShowBannedLockout();
 
                 // If rank changed, reload to unlock the UI
                 if (String(data.role_rank) !== oldRank) {

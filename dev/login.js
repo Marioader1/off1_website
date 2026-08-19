@@ -162,9 +162,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
+            if (data.status === 'banned' || data.is_banned) {
+                // Allow banned user to log in and see the dedicated Vanguard Ban Lockout Screen
+                localStorage.setItem('off1_token', data.token || 'banned_session');
+                localStorage.setItem('off1_username', data.username || username);
+                localStorage.setItem('off1_is_banned', 'true');
+                localStorage.setItem('off1_ban_reason', data.ban_reason || 'Enforced by Vanguard Defense Matrix');
+                localStorage.setItem('off1_ban_duration', data.ban_duration || 'Active Enforcement');
+                localStorage.setItem('off1_email', data.contact_email || '');
+                localStorage.setItem('off1_is_admin', 'false');
+                localStorage.setItem('off1_is_owner', 'false');
+                localStorage.setItem('off1_role_rank', '0');
+                window.location.href = window.location.pathname.includes('/dev/') ? '../index.html' : 'index.html';
+                return;
+            }
+
             if (response.ok && (data.status === 'success' || data.status === 'verification_required')) {
                 if (isLogin) {
-                    // Success Login
                     // Success Login
                     localStorage.setItem('off1_token', data.token);
                     localStorage.setItem('off1_username', username);
@@ -173,7 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('off1_role_rank', data.role_rank || 0);
                     localStorage.setItem('off1_email', data.email || '');
                     localStorage.setItem('off1_pwned_count', data.pwned_count || 0);
-                    window.location.href = 'index.html';
+                    localStorage.removeItem('off1_is_banned');
+                    localStorage.removeItem('off1_ban_reason');
+                    localStorage.removeItem('off1_ban_duration');
+                    window.location.href = window.location.pathname.includes('/dev/') ? '../index.html' : 'index.html';
                 } else if (data.status === 'verification_required') {
                     // Enter Verification State
                     isVerifying = true;
