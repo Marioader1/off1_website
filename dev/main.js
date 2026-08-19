@@ -286,16 +286,17 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAndShowPwnedWarning();
 
     // Logout/Login functionality
-
     function performLogout(silent = false) {
-        // Revert back to Guest mode without losing chat context
-        localStorage.setItem('off1_username', 'Guest');
-        localStorage.setItem('off1_token', 'guest_session');
-        localStorage.setItem('off1_role_rank', '0');
-        localStorage.setItem('off1_is_admin', 'false');
-        localStorage.setItem('off1_is_owner', 'false');
-        localStorage.setItem('off1_pwned_count', '0');
+        // Clear all stored session credentials completely
+        localStorage.removeItem('off1_username');
+        localStorage.removeItem('off1_token');
+        localStorage.removeItem('off1_role_rank');
+        localStorage.removeItem('off1_is_admin');
+        localStorage.removeItem('off1_is_owner');
+        localStorage.removeItem('off1_pwned_count');
         localStorage.removeItem('off1_email');
+        localStorage.removeItem('off1_passkeys');
+        
         currentUser = 'Guest';
         token = 'guest_session';
         
@@ -304,31 +305,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (adminModal) adminModal.classList.add('hidden');
         if (historyModal) historyModal.classList.add('hidden');
         
-        if (window.location.pathname.includes('/dev/')) {
-            if (!silent) {
-                alert("You have successfully logged out. Redirecting to login...");
-            }
-            window.location.href = '../login.html';
-        } else {
-            updateGuestUI();
-            checkAndShowPwnedWarning();
-            updateUserHeader();
-            
-            if (!silent) {
-                alert("You have successfully logged out. Back in Guest mode!");
-            }
-        }
+        const loginPage = window.location.pathname.includes('/dev/') ? '../login.html' : 'login.html';
+        window.location.href = loginPage;
     }
 
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            const currentU = localStorage.getItem('off1_username') || 'Guest';
-            if (currentU === 'Guest') {
-                // Redirect to login page
-                window.location.href = window.location.pathname.includes('/dev/') ? '../login.html' : 'login.html';
-            } else {
-                performLogout();
-            }
+            performLogout();
         });
     }
 
