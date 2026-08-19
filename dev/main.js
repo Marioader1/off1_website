@@ -2731,6 +2731,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 alert("Queue transfer failed: " + (result.error || "Unknown error"));
             }
+        } catch (e) {
+            console.error("Queue transfer error:", e);
+            alert("Queue transfer request failed.");
+        }
+    };
     // --- Modern UX Upgrades: Textarea Auto-resize, Enter to Send, Drag-Drop, Clipboard Paste, Scroll-To-Bottom, Lightbox ---
     
     // 1. Textarea Auto-resize & Shift+Enter support
