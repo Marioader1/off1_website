@@ -51,6 +51,26 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('light-mode');
     }
 
+    // Apple iOS Standalone PWA Promotion Banner
+    const iosInstallBanner = document.getElementById('ios-install-banner');
+    const closeIosInstallBtn = document.getElementById('close-ios-install');
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+    const isIosDismissed = localStorage.getItem('off1_ios_pwa_dismissed') === 'true';
+
+    if (isIOS && !isStandalone && !isIosDismissed && iosInstallBanner) {
+        setTimeout(() => {
+            iosInstallBanner.classList.remove('hidden');
+        }, 2500);
+    }
+
+    if (closeIosInstallBtn && iosInstallBanner) {
+        closeIosInstallBtn.onclick = () => {
+            iosInstallBanner.classList.add('hidden');
+            localStorage.setItem('off1_ios_pwa_dismissed', 'true');
+        };
+    }
+
     const btnAdmin = document.getElementById('btn-admin');
     const adminModal = document.getElementById('admin-modal');
     const closeAdminBtn = document.getElementById('close-admin-btn');
@@ -484,12 +504,149 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Add user message to UI
         appendMessage('user', messageWithFile);
 
-        // Clear input
+        // Clear input & reset height
         userInput.value = '';
+        userInput.style.height = 'auto';
 
         // 2. Fetch real AI response
         fetchAIResponse(message);
     });
+
+    // Global helpers for copy button & image lightbox
+    window.copyCodeFromBtn = function(btn) {
+        const code = decodeURIComponent(btn.getAttribute('data-code') || '');
+        if (!code) return;
+        navigator.clipboard.writeText(code).then(() => {
+            btn.classList.add('copied');
+            btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            setTimeout(() => {
+                btn.classList.remove('copied');
+                btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+            }, 2000);
+        }).catch(err => {
+            console.error("Clipboard copy failed", err);
+        });
+    };
+
+    window.openImageLightbox = function(src) {
+        const lightboxModal = document.getElementById('image-lightbox-modal');
+        const lightboxImg = document.getElementById('lightbox-img');
+        const lightboxDownloadBtn = document.getElementById('lightbox-download-btn');
+        const lightboxCopyBtn = document.getElementById('lightbox-copy-btn');
+        if (!lightboxModal || !lightboxImg) return;
+
+        lightboxImg.src = src;
+        if (lightboxDownloadBtn) lightboxDownloadBtn.href = src;
+        if (lightboxCopyBtn) {
+            lightboxCopyBtn.onclick = () => {
+                const fullUrl = src.startsWith('http') ? src : (window.location.origin + src);
+                navigator.clipboard.writeText(fullUrl).then(() => {
+                    lightboxCopyBtn.innerHTML = '<i class="fas fa-check"></i> Copied Link!';
+                    setTimeout(() => {
+                        lightboxCopyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Image Link';
+                    }, 2000);
+                });
+            };
+        }
+        lightboxModal.classList.remove('hidden');
+    };
+
+    function formatMessageContent(rawText) {
+        if (!rawText) return '';
+
+        let formatted = rawText;
+
+        // 1. Process Completed Thinking / Reasoning blocks <think>...</think>
+        formatted = formatted.replace(/<think>([\s\S]*?)<\/think>/gi, (match, thought) => {
+            const trimmedThought = thought.trim();
+            if (!trimmedThought) return '';
+            return `
+                <details class="thought-accordion">
+                    <summary class="thought-summary">
+                        <span>💭 Thinking Process</span>
+                        <i class="fas fa-chevron-down" style="font-size:0.75rem;"></i>
+                    </summary>
+                    <div class="thought-content">${escapeHTML(trimmedThought)}</div>
+                </details>
+            `;
+        });
+
+        // 1b. Handle In-Flight / Active Streaming <think> tag (not yet closed)
+        if (formatted.includes('<think>') && !formatted.includes('</think>')) {
+            const thinkIndex = formatted.indexOf('<think>');
+            const beforeThink = formatted.substring(0, thinkIndex);
+            const liveThought = formatted.substring(thinkIndex + 7).trim();
+            formatted = beforeThink + `
+                <details class="thought-accordion" open>
+                    <summary class="thought-summary">
+                        <span>💭 Thinking in progress...</span>
+                        <i class="fas fa-spinner fa-spin" style="font-size:0.75rem;"></i>
+                    </summary>
+                    <div class="thought-content">${escapeHTML(liveThought)}</div>
+                </details>
+            `;
+        }
+
+        // 2. Handle In-Flight / Streaming unclosed code fence
+        const codeFenceCount = (formatted.match(/```/g) || []).length;
+        if (codeFenceCount % 2 === 1) {
+            formatted += '\n```';
+        }
+
+        // 2b. Process Code Blocks ```lang ... ```
+        formatted = formatted.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+            const language = lang.trim() || 'code';
+            const cleanCode = code.replace(/\n$/, '');
+            const encodedCode = encodeURIComponent(cleanCode);
+            return `
+                <div class="code-block-wrapper">
+                    <div class="code-header">
+                        <span>${escapeHTML(language)}</span>
+                        <button type="button" class="copy-code-btn" data-code="${encodedCode}" onclick="copyCodeFromBtn(this)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <pre><code>${escapeHTML(cleanCode)}</code></pre>
+                </div>
+            `;
+        });
+
+        // 3. Process Markdown Images ![alt](url)
+        formatted = formatted.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
+            const cleanUrl = url.trim();
+            const cleanAlt = escapeHTML(alt.trim() || 'AI Generated Image');
+            return `<img src="${cleanUrl}" alt="${cleanAlt}" class="chat-gen-img" loading="lazy" onclick="openImageLightbox('${cleanUrl}')" />`;
+        });
+
+        // 4. Process Inline Code `code`
+        formatted = formatted.replace(/`([^`]+)`/g, (match, code) => {
+            return `<code style="background:rgba(255,255,255,0.1); padding:0.15rem 0.4rem; border-radius:4px; font-family:monospace; font-size:0.9em;">${escapeHTML(code)}</code>`;
+        });
+
+        // 5. Bold & Italic
+        formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+        // 6. Markdown Links [text](url)
+        formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+            const cleanUrl = url.trim();
+            if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://') || cleanUrl.startsWith('/')) {
+                return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--primary-color); text-decoration:underline;">${escapeHTML(text)}</a>`;
+            }
+            return escapeHTML(match);
+        });
+
+        // 7. Split by blocks so we convert plain text newlines to <br> without breaking code blocks or accordions
+        const parts = formatted.split(/(<div class="code-block-wrapper">[\s\S]*?<\/div>|<details class="thought-accordion">[\s\S]*?<\/details>|<img[^>]+>)/g);
+        for (let i = 0; i < parts.length; i++) {
+            if (!parts[i].startsWith('<div class="code-block-wrapper">') && 
+                !parts[i].startsWith('<details class="thought-accordion">') &&
+                !parts[i].startsWith('<img')) {
+                parts[i] = parts[i].replace(/\n/g, '<br>');
+            }
+        }
+        return parts.join('');
+    }
 
     function appendMessage(sender, text, forceWarning = false) {
         const messageDiv = document.createElement('div');
@@ -546,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="avatar">O</div>
                 <div class="content">
                     ${warningHtml}
-                    ${escapeHTML(cleanedText).replace(/\n/g, '<br>')}
+                    ${formatMessageContent(cleanedText)}
                 </div>
             `;
         }
@@ -690,11 +847,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 signal: controller.signal
             });
             
-            // Clear the file input after sending (backup safety)
-            if (fileUploadInput) fileUploadInput.value = '';
-            clearTimeout(timeoutId);
+            if (response.status === 403) {
+                let banReason = "Access Denied: You have been blocked by Vanguard Defense Matrix.";
+                try {
+                    const errData = await response.clone().json();
+                    if (errData.message || errData.reason) {
+                        banReason = errData.message || errData.reason;
+                    }
+                } catch(e) {}
+                alert(`🛡️ VANGUARD DEFENSE MATRIX ENFORCEMENT\n\n${banReason}`);
+                return;
+            }
 
-            if (response.status === 401 || response.status === 403) {
+            if (response.status === 401) {
                 if (window.location.pathname.includes('/dev/')) {
                     alert("Your session has expired. Redirecting to login...");
                     localStorage.setItem('off1_username', 'Guest');
@@ -840,7 +1005,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                             if (warningNode) {
                                                 warningHtml = warningNode.outerHTML;
                                             }
-                                            contentNode.innerHTML = warningHtml + escapeHTML(accumulated).replace(/\n/g, '<br>');
+                                            contentNode.innerHTML = warningHtml + formatMessageContent(accumulated);
                                         }
                                     }
                                     scrollToBottom();
@@ -1068,7 +1233,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btnAdmin.classList.remove('d-none');
         btnAdmin.classList.remove('hidden');
 
-        let adminRefreshInterval = null;
+        const btnRefreshAdmin = document.getElementById('btn-refresh-admin');
+        const adminRefreshIcon = document.getElementById('admin-refresh-icon');
 
         async function fetchAdminStats() {
             try {
@@ -1145,26 +1311,254 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     queuesContainer.innerHTML = html;
                 }
+
+                // Fetch Banned Entities Matrix & Appeals
+                await fetchBannedThreats();
+                await fetchBanAppeals();
             } catch (e) {
                 console.error("Dashboard fetch error:", e);
             }
         }
 
+        async function fetchBannedThreats() {
+            const tbody = document.getElementById('banned-threat-tbody');
+            const badge = document.getElementById('stat-banned-badge');
+            if (!tbody) return;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/banned`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    const list = data.banned_entities || [];
+                    if (badge) badge.textContent = `Neutralized Entities: ${list.length}`;
+                    
+                    if (list.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #10b981; padding: 1.5rem; font-weight: 500;">
+                                    <i class="fas fa-shield-alt"></i> Vanguard Defense Matrix Active: 0 Threats Detected. System Nominal.
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    tbody.innerHTML = list.map(item => {
+                        const isAccount = (item.entity_type === 'account') || (item.entity_id && !item.entity_id.includes('.') && !item.entity_id.includes(':'));
+                        const isPerm = item.is_permanent || !item.expires_at;
+                        const strikeBadge = isPerm 
+                            ? `<span class="strike-pill permanent">⛔ PERM (${item.strikes || 1} Strikes)</span>`
+                            : `<span class="strike-pill temporary">⚡ ${item.strikes || 1} Strike (Temp)</span>`;
+                        
+                        const safeId = escapeHTML(item.entity_id || item.ip_address || 'Unknown');
+                        const safeReason = escapeHTML(item.reason || 'Abuse / Policy Violation');
+                        const assocIp = escapeHTML(item.associated_ip || (isAccount ? 'N/A' : safeId));
+
+                        const typePill = isAccount
+                            ? `<span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.72rem; font-weight: 600;"><i class="fas fa-user"></i> Account</span>`
+                            : `<span style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.72rem; font-weight: 600;"><i class="fas fa-globe"></i> IP Block</span>`;
+
+                        const entityTypeStr = isAccount ? 'account' : 'ip';
+
+                        return `
+                            <tr>
+                                <td>
+                                    <span class="ip-terminal-badge" style="font-size: 0.85rem; color: ${isAccount ? '#93c5fd' : '#fca5a5'};">
+                                        ${isAccount ? '<i class="fas fa-user-slash"></i> ' : '<i class="fas fa-ban"></i> '}${safeId}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                                        ${typePill}
+                                        <span style="font-size: 0.72rem; color: var(--text-secondary); font-family: monospace;">IP: ${assocIp}</span>
+                                    </div>
+                                </td>
+                                <td>${strikeBadge}</td>
+                                <td style="color: #fca5a5; font-size: 0.8rem; max-width: 250px;">${safeReason}</td>
+                                <td>
+                                    <button type="button" class="btn-unban-action" onclick="unbanThreatEntity('${entityTypeStr}', '${safeId}')">
+                                        <i class="fas fa-unlock"></i> Unban
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                console.error("Error fetching banned threats:", e);
+            }
+        }
+
+        window.unbanThreatEntity = async function(entityType, entityId) {
+            if (!confirm(`Are you sure you want to unban ${entityType.toUpperCase()} '${entityId}' and clear all strikes?`)) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/unban`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({ entity_type: entityType, entity_id: entityId })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`✅ ${entityType.toUpperCase()} '${entityId}' has been unbanned.`);
+                    fetchBannedThreats();
+                } else {
+                    alert(`Error unbanning: ${data.message}`);
+                }
+            } catch (e) {
+                alert(`Failed to unban: ${e.message}`);
+            }
+        };
+
+        const btnExecuteBan = document.getElementById('btn-execute-ban');
+        if (btnExecuteBan) {
+            btnExecuteBan.onclick = async () => {
+                const typeSelect = document.getElementById('manual-ban-type');
+                const targetInput = document.getElementById('manual-ban-target') || document.getElementById('manual-ban-ip');
+                const durSelect = document.getElementById('manual-ban-duration');
+                const reasonInput = document.getElementById('manual-ban-reason');
+                
+                const entityType = typeSelect?.value || 'account';
+                const entityId = (targetInput?.value || '').trim();
+                const reason = (reasonInput?.value || 'Manual administrator enforcement').trim();
+                const durVal = durSelect?.value || 'perm';
+                const isPerm = durVal === 'perm';
+                const durationMin = isPerm ? 0 : parseInt(durVal, 10);
+
+                if (!entityId) {
+                    alert(`Please enter a valid ${entityType === 'account' ? 'Username' : 'IP Address'} to ban.`);
+                    return;
+                }
+
+                btnExecuteBan.disabled = true;
+                btnExecuteBan.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Banning...';
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/admin/ban`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                        body: JSON.stringify({
+                            entity_type: entityType,
+                            entity_id: entityId,
+                            reason: reason,
+                            permanent: isPerm,
+                            duration_minutes: durationMin
+                        })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        alert(`🚫 ${entityType.toUpperCase()} '${entityId}' has been successfully banned!`);
+                        if (targetInput) targetInput.value = '';
+                        fetchBannedThreats();
+                    } else {
+                        alert(`Error banning: ${data.message}`);
+                    }
+                } catch (e) {
+                    alert(`Failed to ban: ${e.message}`);
+                } finally {
+                    btnExecuteBan.disabled = false;
+                    btnExecuteBan.innerHTML = '<i class="fas fa-skull"></i> <span>Execute Ban</span>';
+                }
+            };
+        }
+
+        async function fetchBanAppeals() {
+            const container = document.getElementById('appeals-list-container');
+            const badge = document.getElementById('appeals-count-badge');
+            if (!container) return;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/appeals`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    const appeals = data.appeals || [];
+                    const pending = appeals.filter(a => a.status === 'pending');
+                    if (badge) badge.textContent = `${pending.length} Pending Appeal${pending.length === 1 ? '' : 's'}`;
+
+                    if (appeals.length === 0) {
+                        container.innerHTML = `<div style="font-size: 0.8rem; color: var(--text-secondary); text-align: center; padding: 0.8rem;">No ban appeals on record.</div>`;
+                        return;
+                    }
+
+                    container.innerHTML = appeals.map(a => {
+                        const isPending = a.status === 'pending';
+                        const statusColor = isPending ? '#f59e0b' : (a.status === 'approved' ? '#10b981' : '#ef4444');
+                        return `
+                            <div style="background: rgba(0,0,0,0.3); border: 1px solid ${statusColor}44; border-left: 3px solid ${statusColor}; border-radius: 6px; padding: 0.6rem; font-size: 0.78rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                                    <div>
+                                        <strong style="color: var(--text-primary); font-size: 0.82rem;">${escapeHTML(a.entity_id)}</strong>
+                                        <span style="color: var(--text-secondary); font-size: 0.72rem; margin-left: 0.4rem;">(${escapeHTML(a.entity_type)}) &bull; ${escapeHTML(a.contact_email || 'No email')}</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                        <span style="color: ${statusColor}; font-weight: 700; text-transform: uppercase; font-size: 0.7rem;">${escapeHTML(a.status)}</span>
+                                        ${isPending ? `
+                                            <button onclick="resolveBanAppeal(${a.id}, 'approve')" style="background: #10b981; color: white; border: none; border-radius: 4px; padding: 0.2rem 0.5rem; font-size: 0.7rem; cursor: pointer; font-weight: 600;">Approve & Unban</button>
+                                            <button onclick="resolveBanAppeal(${a.id}, 'deny')" style="background: #ef4444; color: white; border: none; border-radius: 4px; padding: 0.2rem 0.5rem; font-size: 0.7rem; cursor: pointer; font-weight: 600;">Deny</button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                <div style="color: #fca5a5; margin-bottom: 0.2rem;"><strong>Ban Reason:</strong> ${escapeHTML(a.ban_reason)}</div>
+                                <div style="color: #93c5fd; margin-bottom: 0.2rem;"><strong>User Statement:</strong> "${escapeHTML(a.user_statement)}"</div>
+                                <details style="margin-top: 0.3rem; color: var(--text-secondary); font-size: 0.72rem;">
+                                    <summary style="cursor: pointer; color: #a78bfa;">View Recent Account Actions & Chat Log</summary>
+                                    <pre style="background: rgba(0,0,0,0.5); padding: 0.4rem; border-radius: 4px; margin-top: 0.3rem; white-space: pre-wrap; font-family: monospace; font-size: 0.7rem; max-height: 100px; overflow-y: auto;">${escapeHTML(a.recent_activity_summary || 'None')}</pre>
+                                </details>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error("Failed to fetch ban appeals:", err);
+            }
+        }
+
+        window.resolveBanAppeal = async function(appealId, action) {
+            if (!confirm(`Are you sure you want to ${action.toUpperCase()} Appeal #${appealId}?`)) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/appeals/resolve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({ appeal_id: appealId, action: action })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message);
+                    fetchBanAppeals();
+                    fetchBannedThreats();
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch (e) {
+                alert(`Action failed: ${e.message}`);
+            }
+        };
+
+        if (btnRefreshAdmin) {
+            btnRefreshAdmin.addEventListener('click', async () => {
+                if (adminRefreshIcon) adminRefreshIcon.classList.add('fa-spin');
+                btnRefreshAdmin.disabled = true;
+                try {
+                    await fetchAdminStats();
+                } finally {
+                    setTimeout(() => {
+                        if (adminRefreshIcon) adminRefreshIcon.classList.remove('fa-spin');
+                        btnRefreshAdmin.disabled = false;
+                    }, 400);
+                }
+            });
+        }
+
         btnAdmin.addEventListener('click', () => {
             adminModal.classList.remove('hidden');
-            fetchAdminStats(); // Initial fetch
-            
-            // Set up 15s refresh interval
-            if (adminRefreshInterval) clearInterval(adminRefreshInterval);
-            adminRefreshInterval = setInterval(fetchAdminStats, 15000);
+            fetchAdminStats(); // Fetch on open
         });
 
         closeAdminBtn.addEventListener('click', () => {
             adminModal.classList.add('hidden');
-            if (adminRefreshInterval) {
-                clearInterval(adminRefreshInterval);
-                adminRefreshInterval = null;
-            }
         });
 
         const runSpeedtestBtn = document.getElementById('run-speedtest-btn');
@@ -1831,19 +2225,63 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAttachmentPreview();
     }
 
-    if (attachmentBtn && fileUploadInput) {
-        attachmentBtn.onclick = () => fileUploadInput.click();
-        fileUploadInput.onchange = () => {
-            const files = Array.from(fileUploadInput.files);
-            if (selectedFiles.length + files.length > 10) {
-                alert("You can only upload up to 10 files in total.");
-                fileUploadInput.value = '';
-                return;
-            }
-            selectedFiles = selectedFiles.concat(files);
-            updateAttachmentPreview();
-            fileUploadInput.value = '';
+    const attachmentMenu = document.getElementById('attachment-menu');
+    const btnMenuUpload = document.getElementById('btn-menu-upload');
+    const btnMenuGenerateImage = document.getElementById('btn-menu-generate-image');
+    const modelSelect = document.getElementById('model-select');
+
+    if (attachmentBtn && attachmentMenu) {
+        attachmentBtn.onclick = (e) => {
+            e.stopPropagation();
+            attachmentMenu.classList.toggle('hidden');
         };
+
+        if (btnMenuUpload && fileUploadInput) {
+            btnMenuUpload.onclick = (e) => {
+                e.stopPropagation();
+                attachmentMenu.classList.add('hidden');
+                fileUploadInput.click();
+            };
+        }
+
+        if (btnMenuGenerateImage) {
+            btnMenuGenerateImage.onclick = (e) => {
+                e.stopPropagation();
+                attachmentMenu.classList.add('hidden');
+                if (modelSelect) {
+                    modelSelect.value = 'sd3.5-medium';
+                }
+                if (userInput) {
+                    if (!userInput.value.trim()) {
+                        userInput.value = '/image ';
+                    } else if (!userInput.value.trim().startsWith('/image')) {
+                        userInput.value = '/image ' + userInput.value.trim();
+                    }
+                    userInput.focus();
+                    userInput.setSelectionRange(userInput.value.length, userInput.value.length);
+                }
+            };
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!attachmentMenu.contains(e.target) && e.target !== attachmentBtn) {
+                attachmentMenu.classList.add('hidden');
+            }
+        });
+
+        if (fileUploadInput) {
+            fileUploadInput.onchange = () => {
+                const files = Array.from(fileUploadInput.files);
+                if (selectedFiles.length + files.length > 10) {
+                    alert("You can only upload up to 10 files in total.");
+                    fileUploadInput.value = '';
+                    return;
+                }
+                selectedFiles = selectedFiles.concat(files);
+                updateAttachmentPreview();
+                fileUploadInput.value = '';
+            };
+        }
     }
 
     if (micBtn) {
@@ -2072,19 +2510,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (overrideTimerInterval) clearInterval(overrideTimerInterval);
                 if (data.target_utc_timestamp) {
-                    const updateTimer = () => {
-                        const now = new Date().getTime();
-                        const target = new Date(data.target_utc_timestamp).getTime();
-                        const diff = Math.max(0, Math.floor((target - now) / 1000));
-                        const mins = Math.floor(diff / 60).toString().padStart(2, '0');
-                        const secs = (diff % 60).toString().padStart(2, '0');
-                        if (timerSpan) timerSpan.textContent = `${mins}:${secs}`;
-                        if (diff === 0 && overrideTimerInterval) {
-                            clearInterval(overrideTimerInterval);
-                        }
-                    };
-                    updateTimer(); // Tick immediately to avoid "00:00" freeze/lag
-                    overrideTimerInterval = setInterval(updateTimer, 1000);
+                    const targetTime = new Date(data.target_utc_timestamp).getTime();
+                    if (isNaN(targetTime) || data.target_utc_timestamp === "unlimited" || data.target_utc_timestamp === "-1") {
+                        if (timerSpan) timerSpan.textContent = "∞";
+                    } else {
+                        const updateTimer = () => {
+                            const now = new Date().getTime();
+                            const diff = Math.max(0, Math.floor((targetTime - now) / 1000));
+                            const mins = Math.floor(diff / 60).toString().padStart(2, '0');
+                            const secs = (diff % 60).toString().padStart(2, '0');
+                            if (timerSpan) timerSpan.textContent = `${mins}:${secs}`;
+                            if (diff === 0 && overrideTimerInterval) {
+                                clearInterval(overrideTimerInterval);
+                            }
+                        };
+                        updateTimer(); // Tick immediately to avoid "00:00" freeze/lag
+                        overrideTimerInterval = setInterval(updateTimer, 1000);
+                    }
                 }
             } else if (data.type === 'toast') {
                 showToast(
@@ -2167,9 +2609,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let payload = { tier, message };
             if (tier === 'critical_override') {
-                const mins = parseInt(timerInput ? timerInput.value : '10') || 10;
-                const targetUtc = new Date(Date.now() + mins * 60000).toISOString();
-                payload.target_utc = targetUtc;
+                const mins = parseInt(timerInput ? timerInput.value : '10');
+                if (mins === -1) {
+                    payload.target_utc = "unlimited";
+                } else {
+                    const actualMins = isNaN(mins) ? 10 : mins;
+                    const targetUtc = new Date(Date.now() + actualMins * 60000).toISOString();
+                    payload.target_utc = targetUtc;
+                }
             } else {
                 const actionText = document.getElementById('toast-action-text')?.value || '';
                 const linkUrl = document.getElementById('toast-link-url')?.value || '';
@@ -2254,10 +2701,111 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 alert("Queue transfer failed: " + (result.error || "Unknown error"));
             }
-        } catch (e) {
-            console.error("Error during queue transfer:", e);
+    // --- Modern UX Upgrades: Textarea Auto-resize, Enter to Send, Drag-Drop, Clipboard Paste, Scroll-To-Bottom, Lightbox ---
+    
+    // 1. Textarea Auto-resize & Shift+Enter support
+    if (userInput) {
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+        });
+
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (chatForm) {
+                    chatForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            }
+        });
+    }
+
+    // 2. Scroll to bottom button
+    const scrollBottomBtn = document.getElementById('scroll-bottom-btn');
+    if (chatHistory && scrollBottomBtn) {
+        chatHistory.addEventListener('scroll', () => {
+            const distFromBottom = chatHistory.scrollHeight - chatHistory.scrollTop - chatHistory.clientHeight;
+            if (distFromBottom > 150) {
+                scrollBottomBtn.classList.remove('hidden');
+            } else {
+                scrollBottomBtn.classList.add('hidden');
+            }
+        });
+
+        scrollBottomBtn.onclick = () => {
+            chatHistory.scrollTo({ top: chatHistory.scrollHeight, behavior: 'smooth' });
+        };
+    }
+
+    // 3. Drag & Drop File Upload onto Chat Container
+    const chatContainer = document.getElementById('chat-container');
+    const dragDropOverlay = document.getElementById('drag-drop-overlay');
+
+    if (chatContainer && dragDropOverlay) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            chatContainer.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragDropOverlay.classList.remove('hidden');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            chatContainer.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragDropOverlay.classList.add('hidden');
+            });
+        });
+
+        chatContainer.addEventListener('drop', (e) => {
+            const files = Array.from(e.dataTransfer.files || []);
+            if (files.length > 0) {
+                if (selectedFiles.length + files.length > 10) {
+                    alert("You can only upload up to 10 files in total.");
+                    return;
+                }
+                selectedFiles = selectedFiles.concat(files);
+                updateAttachmentPreview();
+            }
+        });
+    }
+
+    // 4. Clipboard Screenshot / Image Pasting (Ctrl + V)
+    window.addEventListener('paste', (e) => {
+        const items = (e.clipboardData || window.clipboardData)?.items;
+        if (!items) return;
+        const pastedFiles = [];
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
+                if (blob) {
+                    const file = new File([blob], `screenshot_${Date.now()}.png`, { type: blob.type });
+                    pastedFiles.push(file);
+                }
+            }
         }
-    };
+        if (pastedFiles.length > 0) {
+            if (selectedFiles.length + pastedFiles.length > 10) {
+                alert("You can only upload up to 10 files in total.");
+                return;
+            }
+            selectedFiles = selectedFiles.concat(pastedFiles);
+            updateAttachmentPreview();
+        }
+    });
+
+    // 5. Image Lightbox Modal Close Listener
+    const lightboxModal = document.getElementById('image-lightbox-modal');
+    const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
+    if (lightboxModal && lightboxCloseBtn) {
+        lightboxCloseBtn.onclick = () => lightboxModal.classList.add('hidden');
+        lightboxModal.onclick = (e) => {
+            if (e.target === lightboxModal) {
+                lightboxModal.classList.add('hidden');
+            }
+        };
+    }
 
 });
 

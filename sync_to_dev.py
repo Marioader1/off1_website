@@ -13,7 +13,8 @@ FILES_TO_SYNC = [
     "main.js",
     "reset_password.html",
     "style.css",
-    "favicon.png"
+    "favicon.png",
+    "manifest.json"
 ]
 
 def sync_assets():

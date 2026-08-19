@@ -33,79 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let isLogin = true;
     let isVerifying = false;
 
-    // Password Requirements references
-    const registerReqs = document.getElementById('register-password-requirements');
-    const registerStrength = document.getElementById('register-strength-bar');
-    const registerCriteria = {
-        length: document.getElementById('req-length'),
-        upper: document.getElementById('req-upper'),
-        lower: document.getElementById('req-lower'),
-        number: document.getElementById('req-number'),
-        special: document.getElementById('req-special')
-    };
-
-    function checkPasswordStrength(val) {
-        const checks = {
-            length: val.length >= 8,
-            upper: /[A-Z]/.test(val),
-            lower: /[a-z]/.test(val),
-            number: /[0-9]/.test(val),
-            special: /[^a-zA-Z0-9]/.test(val)
-        };
-
-        let metCount = 0;
-        for (const [key, met] of Object.entries(checks)) {
-            const el = registerCriteria[key];
-            if (el) {
-                const icon = el.querySelector('i');
-                if (met) {
-                    el.classList.add('met');
-                    if (icon) icon.className = 'fas fa-check-circle';
-                    metCount++;
-                } else {
-                    el.classList.remove('met');
-                    if (icon) icon.className = 'far fa-circle';
-                }
-            }
-        }
-
-        if (registerStrength) {
-            const pct = (metCount / 5) * 100;
-            registerStrength.style.width = `${pct}%`;
-            if (metCount <= 2) {
-                registerStrength.style.backgroundColor = '#ef4444';
-            } else if (metCount <= 4) {
-                registerStrength.style.backgroundColor = '#fbbf24';
-            } else {
-                registerStrength.style.backgroundColor = '#10b981';
-            }
-        }
-
-        return metCount === 5;
-    }
-
-    passwordInput.addEventListener('focus', () => {
-        if (!isLogin && !isVerifying) {
-            registerReqs.classList.add('visible');
-            registerReqs.classList.remove('hidden');
-        }
-    });
-
-    passwordInput.addEventListener('blur', () => {
-        if (passwordInput.value.length === 0) {
-            registerReqs.classList.remove('visible');
-            registerReqs.classList.add('hidden');
-        }
-    });
-
-    passwordInput.addEventListener('input', () => {
-        if (!isLogin && !isVerifying) {
-            registerReqs.classList.add('visible');
-            registerReqs.classList.remove('hidden');
-            checkPasswordStrength(passwordInput.value);
-        }
-    });
-
     // Redirect if already logged in (and not a Guest)
     const token = localStorage.getItem('off1_token');
     const username = localStorage.getItem('off1_username');
@@ -326,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.dispatchEvent(new Event('submit'));
     });
 
-    function updateToggleUI() {
+    function updateFormState() {
         if (isLogin) {
             submitBtn.textContent = 'Login';
             toggleText.textContent = "Don't have an account? ";
@@ -334,10 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
             formSubtitle.textContent = 'Welcome back, system online.';
             emailField.classList.add('d-none');
             forgotPwLink.classList.remove('d-none');
-            
-            // Hide requirements on login mode
-            registerReqs.classList.remove('visible');
-            registerReqs.classList.add('hidden');
         } else {
             submitBtn.textContent = 'Register';
             toggleText.textContent = "Already have an account? ";
@@ -345,19 +268,88 @@ document.addEventListener('DOMContentLoaded', () => {
             formSubtitle.textContent = 'Join the Off1 ecosystem.';
             emailField.classList.remove('d-none');
             forgotPwLink.classList.add('d-none');
-            
-            // Show requirements on registration mode if focused or typed
-            if (passwordInput.value.length > 0) {
-                registerReqs.classList.add('visible');
-                registerReqs.classList.remove('hidden');
-                checkPasswordStrength(passwordInput.value);
-            }
         }
     }
 
     function showError(msg) {
         errorMsg.textContent = `❌ ${msg}`;
         errorMsg.classList.remove('d-none');
+
+        // If error mentions ban from Vanguard Defense Matrix, auto-show the Ban Appeal form!
+        const appealContainer = document.getElementById('ban-appeal-container');
+        const appealReasonText = document.getElementById('appeal-ban-reason-text');
+        if (msg && (msg.toLowerCase().includes('banned') || msg.toLowerCase().includes('vanguard') || msg.toLowerCase().includes('locked'))) {
+            if (appealContainer) {
+                appealContainer.classList.remove('d-none');
+                if (appealReasonText) {
+                    appealReasonText.innerHTML = `<strong>Active Enforcement:</strong> ${escapeHTML(msg)}<br><span style="color:#94a3b8; font-size:0.75rem;">Submit an appeal directly to the system owner with your explanation.</span>`;
+                }
+                const unameVal = usernameInput.value.trim();
+                const emailInputElem = document.getElementById('appeal-contact-email');
+                if (emailInputElem && !emailInputElem.value && emailInput && emailInput.value) {
+                    emailInputElem.value = emailInput.value;
+                }
+            }
+        }
+    }
+
+    function escapeHTML(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Ban Appeal Submit Handler
+    const btnSubmitAppeal = document.getElementById('btn-submit-appeal');
+    if (btnSubmitAppeal) {
+        btnSubmitAppeal.addEventListener('click', async () => {
+            const statement = document.getElementById('appeal-statement').value.trim();
+            const contactEmail = document.getElementById('appeal-contact-email').value.trim();
+            const username = usernameInput.value.trim();
+            const feedback = document.getElementById('appeal-feedback');
+
+            if (!statement) {
+                alert("Please enter a statement explaining why your ban should be reviewed.");
+                return;
+            }
+
+            btnSubmitAppeal.disabled = true;
+            btnSubmitAppeal.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Transmitting Appeal...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/appeal/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({
+                        entity_type: username ? 'account' : 'ip',
+                        entity_id: username,
+                        contact_email: contactEmail,
+                        user_statement: statement
+                    })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    feedback.style.display = 'block';
+                    feedback.style.color = '#10b981';
+                    feedback.innerHTML = `✅ <strong>Appeal #${data.appeal_id || ''} Transmitted!</strong><br>The system owner has received your appeal along with your recent account action log.`;
+                    btnSubmitAppeal.style.display = 'none';
+                    document.getElementById('appeal-statement').disabled = true;
+                } else {
+                    feedback.style.display = 'block';
+                    feedback.style.color = '#ef4444';
+                    feedback.textContent = `❌ ${data.message || 'Failed to submit appeal.'}`;
+                    btnSubmitAppeal.disabled = false;
+                    btnSubmitAppeal.innerHTML = '<i class="fas fa-paper-plane"></i> Retry Appeal';
+                }
+            } catch (err) {
+                feedback.style.display = 'block';
+                feedback.style.color = '#ef4444';
+                feedback.textContent = "❌ Connection failed. Could not transmit appeal.";
+                btnSubmitAppeal.disabled = false;
+                btnSubmitAppeal.innerHTML = '<i class="fas fa-paper-plane"></i> Retry Appeal';
+            }
+        });
     }
 
 });

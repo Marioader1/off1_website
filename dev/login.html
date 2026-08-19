@@ -2,11 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Login - Off1</title>
+    
+    <!-- Apple iOS Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Off1">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#030712">
+    <link rel="apple-touch-icon" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+    <link rel="manifest" href="manifest.json">
+
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="login-body">
     <div class="login-card glass-panel">
@@ -14,6 +25,8 @@
         <p class="subtitle" id="form-subtitle">Welcome back, system online.</p>
 
         <form id="login-form">
+            <!-- Anti-Bot Honeypot Trap -->
+            <input type="text" name="hp_username_trap" id="hp_username_trap" style="display:none !important; position:absolute; left:-9999px;" tabindex="-1" autocomplete="off" aria-hidden="true">
             <div class="login-input-group">
                 <div id="email-field" class="d-none">
                     <label for="email">Email Address</label>
@@ -26,18 +39,6 @@
                 <div>
                     <label for="password">Password</label>
                     <input type="password" id="password" class="login-input" placeholder="Enter password" required autocomplete="current-password">
-                    <div class="password-requirements hidden" id="register-password-requirements">
-                        <div class="strength-bar-container">
-                            <div class="strength-bar" id="register-strength-bar"></div>
-                        </div>
-                        <div class="requirements-grid">
-                            <div class="requirement-item" id="req-length"><i class="far fa-circle"></i> 8+ Characters</div>
-                            <div class="requirement-item" id="req-upper"><i class="far fa-circle"></i> 1 Uppercase</div>
-                            <div class="requirement-item" id="req-lower"><i class="far fa-circle"></i> 1 Lowercase</div>
-                            <div class="requirement-item" id="req-number"><i class="far fa-circle"></i> 1 Number</div>
-                            <div class="requirement-item" id="req-special"><i class="far fa-circle"></i> 1 Special (!@#$)</div>
-                        </div>
-                    </div>
                 </div>
                 <div id="verification-field" class="d-none">
                     <label for="verification-code">Verification Code</label>
@@ -70,6 +71,23 @@
                 Continue as Guest
             </button>
         </form>
+
+        <!-- Vanguard Ban Appeal Container -->
+        <div id="ban-appeal-container" class="d-none" style="margin-top: 1.5rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 10px; padding: 1.25rem; text-align: left;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <i class="fas fa-shield-virus" style="color: #ef4444; font-size: 1.1rem;"></i>
+                <h3 style="font-size: 0.95rem; margin: 0; color: #f87171; font-weight: bold;">Vanguard Ban Appeal</h3>
+            </div>
+            <p id="appeal-ban-reason-text" style="font-size: 0.8rem; color: #fca5a5; margin-bottom: 0.8rem; line-height: 1.4;"></p>
+            <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                <input type="email" id="appeal-contact-email" class="login-input" placeholder="Your contact email" style="padding: 0.5rem; font-size: 0.85rem;">
+                <textarea id="appeal-statement" class="login-input" placeholder="Explain why your ban should be lifted..." rows="3" style="padding: 0.5rem; font-size: 0.85rem; resize: vertical;"></textarea>
+                <button type="button" id="btn-submit-appeal" class="btn btn-primary" style="background: #ef4444; border: none; padding: 0.5rem; font-size: 0.85rem; font-weight: 600;">
+                    <i class="fas fa-paper-plane"></i> Submit Appeal to Owner
+                </button>
+                <div id="appeal-feedback" style="font-size: 0.8rem; text-align: center; display: none;"></div>
+            </div>
+        </div>
 
         <!-- Forgot Password Modal (Simplified) -->
         <div id="forgot-pw-container" class="d-none" style="margin-top: 2rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">

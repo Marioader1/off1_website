@@ -2,14 +2,37 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>Off1 - AI Assistant</title>
+    
+    <!-- Apple iOS Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Off1">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#030712">
+    <link rel="apple-touch-icon" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+    <link rel="manifest" href="manifest.json">
+
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <!-- iOS Standalone Install / Add to Home Screen Smart Banner -->
+    <div id="ios-install-banner" class="ios-install-banner hidden">
+        <div class="ios-install-card">
+            <img src="favicon.png" alt="Off1 App" class="ios-install-icon">
+            <div class="ios-install-info">
+                <strong>Install Off1 on your iPhone / iPad</strong>
+                <p>Tap <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align: -2px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> <strong>Share</strong> and select <strong>'Add to Home Screen'</strong> for the full standalone app experience!</p>
+            </div>
+            <button type="button" id="close-ios-install" class="ios-install-close" aria-label="Dismiss">&times;</button>
+        </div>
+    </div>
+
     <!-- Pillar 4: Two-Tier Broadcast System - Tier 2 Persistent Critical Override Banner -->
     <div id="critical-override-banner" class="critical-banner hidden">
         <div class="critical-banner-content">
@@ -62,7 +85,15 @@
         </aside>
 
         <!-- Main Chat Area -->
-        <main class="chat-container glass-panel">
+        <main class="chat-container glass-panel" id="chat-container">
+            <!-- Drag and drop upload overlay -->
+            <div id="drag-drop-overlay" class="drag-drop-overlay hidden">
+                <div class="drag-drop-content">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>Drop images or files here to attach</span>
+                </div>
+            </div>
+
             <div class="chat-header">
                 <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -87,17 +118,40 @@
                 </div>
             </div>
 
+            <!-- Scroll to bottom quick floating button -->
+            <button id="scroll-bottom-btn" class="scroll-bottom-btn hidden" aria-label="Scroll to bottom" title="Scroll to bottom">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+
             <div class="input-area">
                 <div id="attachment-preview-area" class="hidden"></div>
                 <form id="chat-form">
                     <input type="file" id="file-upload-input" accept=".pdf,.docx,.pptx,.xlsx,image/*,audio/*" style="display: none;" multiple>
-                    <button type="button" id="attachment-btn" class="media-btn" aria-label="Attach File">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                    </button>
-                    <input type="text" id="user-input" placeholder="Message Off1..." autocomplete="off">
+                    <div style="position: relative; display: inline-flex; align-items: center;">
+                        <button type="button" id="attachment-btn" class="media-btn" aria-label="Add or Attach" title="Actions & Attachments">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                        
+                        <!-- Plus Action Popup Menu -->
+                        <div id="attachment-menu" class="hidden" style="position: absolute; bottom: 50px; left: 0; min-width: 220px; background: rgba(17, 24, 39, 0.95); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.6); z-index: 1000; display: flex; flex-direction: column; gap: 0.35rem;">
+                            <button type="button" id="btn-menu-upload" class="action-menu-item" style="display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.6rem 0.8rem; background: transparent; border: none; color: var(--text-primary); border-radius: 8px; cursor: pointer; text-align: left; font-size: 0.9rem; transition: background 0.2s;">
+                                <i class="fas fa-paperclip" style="color: #38bdf8; width: 16px;"></i>
+                                <span>Upload Files / Photos</span>
+                            </button>
+                            <button type="button" id="btn-menu-generate-image" class="action-menu-item" style="display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.6rem 0.8rem; background: transparent; border: none; color: var(--text-primary); border-radius: 8px; cursor: pointer; text-align: left; font-size: 0.9rem; transition: background 0.2s;">
+                                <i class="fas fa-paint-brush" style="color: #fbbf24; width: 16px;"></i>
+                                <span>Generate Image</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Anti-Bot Honeypot Trap (Invisible to humans, auto-filled by scrapers/bots) -->
+                    <input type="text" name="hp_bot_trap" id="hp_bot_trap" style="display:none !important; position:absolute; left:-9999px;" tabindex="-1" autocomplete="off" aria-hidden="true">
+                    <textarea id="user-input" placeholder="Message Off1... (Shift+Enter for newline)" rows="1" autocomplete="off"></textarea>
                     <button type="button" id="mic-btn" class="media-btn" aria-label="Live Audio">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
@@ -111,6 +165,7 @@
                             <option value="gemma4-e2b-thinking">💭 Thinking Mode</option>
                             <option value="gemma4-e4b-thinking">🧠 Pro Mode</option>
                             <option value="gemma3-1b">🚀 Turbo Mode</option>
+                            <option value="sd3.5-medium">🎨 Image Generation</option>
                         </select>
                     </div>
 
@@ -261,7 +316,13 @@
 
     <div id="admin-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
         <div class="modal-content glass-panel" style="max-width: 1200px; text-align: left;">
-            <h2 class="glow-text" style="color: #fbbf24;">Admin Dashboard</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h2 class="glow-text" style="color: #fbbf24; margin: 0;">Admin Dashboard</h2>
+                <button id="btn-refresh-admin" class="btn btn-secondary" title="Refresh Dashboard Stats" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; font-size: 0.85rem; border-color: rgba(251, 191, 36, 0.4); color: #fbbf24; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">
+                    <i class="fas fa-sync-alt" id="admin-refresh-icon"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
             
             <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; margin-top: 1.5rem;">
                 <!-- Left Section: Stats (3 columns of 5) -->
@@ -329,6 +390,87 @@
                         </div>
                     </div>
                     <button id="btn-trigger-reboot" class="btn btn-primary" style="width: 100%; margin-top: 1rem; background: #ef4444; color: white; font-weight: 600;"><i class="fas fa-sync-alt"></i> Schedule Reboot</button>
+                </div>
+            </div>
+
+            <!-- Pillar: Cyberpunk Vanguard Defense Matrix -->
+            <div class="cyber-threat-panel" style="margin-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid rgba(239,68,68,0.25); padding-bottom: 0.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-shield-virus" style="color: #ef4444; font-size: 1.25rem;"></i>
+                        <h3 style="font-size: 1.05rem; margin: 0; color: #f87171; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Vanguard Defense Matrix</h3>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span class="threat-radar-indicator">
+                            <span class="threat-pulse-dot"></span> Vanguard Interception Active
+                        </span>
+                        <span id="stat-banned-badge" style="font-size: 0.8rem; font-weight: bold; color: #ef4444; background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); padding: 0.2rem 0.6rem; border-radius: 6px;">Neutralized Entities: 0</span>
+                    </div>
+                </div>
+
+                <!-- Live Banned Threat Table -->
+                <div class="banned-table-container">
+                    <table class="banned-threat-table">
+                        <thead>
+                            <tr>
+                                <th>Target Entity</th>
+                                <th>Type & Origin IP</th>
+                                <th>Status / Strikes</th>
+                                <th>Detection Reason</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="banned-threat-tbody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 1.5rem;">Scanning firewall records...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Quick-Ban Weaponizer / Manual Enforcement -->
+                <div style="margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06);">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em;"><i class="fas fa-crosshairs"></i> Target Ban Weaponizer (Account or IP)</div>
+                    <div class="manual-ban-grid" style="grid-template-columns: 1.2fr 2fr 1.2fr 2.5fr 1.3fr;">
+                        <select id="manual-ban-type" style="padding: 0.5rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid rgba(239,68,68,0.4); border-radius: 6px; font-size: 0.82rem;">
+                            <option value="account" selected>👤 Account</option>
+                            <option value="ip">🌐 IP Address</option>
+                        </select>
+                        <input type="text" id="manual-ban-target" placeholder="Username or IP Address" style="padding: 0.5rem 0.7rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid rgba(239,68,68,0.4); border-radius: 6px; font-family: monospace; font-size: 0.85rem;">
+                        <select id="manual-ban-duration" style="padding: 0.5rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid rgba(239,68,68,0.4); border-radius: 6px; font-size: 0.82rem;">
+                            <option value="5">⏱️ 5 Minutes</option>
+                            <option value="15">⏱️ 15 Minutes</option>
+                            <option value="30">⏱️ 30 Minutes</option>
+                            <option value="60">⏳ 1 Hour</option>
+                            <option value="180">⏳ 3 Hours</option>
+                            <option value="360">⏳ 6 Hours</option>
+                            <option value="720">⏳ 12 Hours</option>
+                            <option value="1440">📅 1 Day (24h)</option>
+                            <option value="4320">📅 3 Days</option>
+                            <option value="10080">🗓️ 1 Week (7d)</option>
+                            <option value="20160">🗓️ 2 Weeks (14d)</option>
+                            <option value="43200">🗓️ 1 Month (30d)</option>
+                            <option value="525600">🗓️ 1 Year</option>
+                            <option value="perm" selected>⛔ Permanent Ban</option>
+                        </select>
+                        <input type="text" id="manual-ban-reason" placeholder="Reason for ban" value="Manual administrator enforcement" style="padding: 0.5rem 0.7rem; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid rgba(239,68,68,0.4); border-radius: 6px; font-size: 0.85rem;">
+                        <button type="button" id="btn-execute-ban" class="btn btn-primary" style="padding: 0.5rem 0.8rem; background: #ef4444; color: white; font-weight: 700; font-size: 0.82rem; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; box-shadow: 0 0 12px rgba(239,68,68,0.4);">
+                            <i class="fas fa-skull"></i> <span>Execute Ban</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ban Appeals Review Queue -->
+                <div style="margin-top: 1.25rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                        <div style="font-size: 0.82rem; font-weight: 700; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.4rem;">
+                            <i class="fas fa-inbox"></i> <span>Incoming Ban Appeals & Audit Log</span>
+                        </div>
+                        <span id="appeals-count-badge" style="font-size: 0.75rem; color: #f59e0b; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); padding: 0.15rem 0.5rem; border-radius: 4px;">0 Pending Appeals</span>
+                    </div>
+                    <div id="appeals-list-container" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); text-align: center; padding: 0.8rem;">No pending ban appeals.</div>
+                    </div>
                 </div>
             </div>
 
@@ -443,6 +585,22 @@
             <div id="delete-modal-actions" class="modal-actions" style="display: flex; gap: 1rem; margin-top: 1rem;">
                 <button id="delete-no" class="btn btn-secondary" style="flex: 1;">No, keep it</button>
                 <button id="delete-yes" class="btn btn-primary" style="flex: 1; background: #ef4444;">Yes, delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox Modal -->
+    <div id="image-lightbox-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" style="z-index: 12000; padding: 1rem;">
+        <div class="lightbox-wrapper">
+            <button type="button" id="lightbox-close-btn" class="lightbox-close-btn" aria-label="Close">&times;</button>
+            <img id="lightbox-img" src="" alt="Full Resolution Generated Image">
+            <div class="lightbox-toolbar">
+                <a id="lightbox-download-btn" href="#" download="off1_generated_image.png" class="lightbox-btn">
+                    <i class="fas fa-download"></i> Download Full Image
+                </a>
+                <button type="button" id="lightbox-copy-btn" class="lightbox-btn">
+                    <i class="fas fa-copy"></i> Copy Image Link
+                </button>
             </div>
         </div>
     </div>
