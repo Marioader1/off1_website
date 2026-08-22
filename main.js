@@ -938,9 +938,17 @@ document.addEventListener('DOMContentLoaded', () => {
         chatHistory.appendChild(messageDiv);
         scrollToBottom();
 
-        // 180 second timeout for fetch (giving AI more time to think)
+        // Avoid leaving the user on an endless “Thinking...” state.
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 180000);
+        // This is an inactivity timeout, not a total request timeout. The
+        // queue sends heartbeats while waiting, so those heartbeats must keep
+        // the request alive and preserve the user's queue position.
+        let timeoutId;
+        const armInactivityTimeout = () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => controller.abort(), 60000);
+        };
+        armInactivityTimeout();
 
         try {
             const formData = new FormData();
@@ -977,6 +985,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData,
                 signal: controller.signal
             });
+
+            // Error responses are JSON, not SSE. Surface them instead of
+            // leaving the loading bubble stuck on “Thinking...”.
+            if (!response.ok) {
+                let detail = `HTTP ${response.status}`;
+                try {
+                    const errorBody = await response.clone().json();
+                    detail = errorBody.error || errorBody.message || detail;
+                } catch (_) {}
+                throw new Error(`Server rejected the request: ${detail}`);
+            }
             
             if (response.status === 403) {
                 let banReason = "Access Denied: You have been blocked by Vanguard Defense Matrix.";
@@ -1040,6 +1059,7 @@ document.addEventListener('DOMContentLoaded', () => {
             while (!done) {
                 const { value, done: doneReading } = await reader.read();
                 done = doneReading;
+                if (!doneReading) armInactivityTimeout();
                 if (value) {
                     buffer += decoder.decode(value, { stream: !done });
                     const lines = buffer.split("\n");
