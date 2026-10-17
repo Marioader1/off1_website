@@ -1156,10 +1156,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (!tokenChunk && chunk.status !== 'streaming' && !chunk.done) continue;
 
                                 if (tokenChunk) {
-                                    const throttledBatteryOffline = (typeof isWebBatteryOfflineThrottled === 'function') && isWebBatteryOfflineThrottled();
-                                    if (throttledBatteryOffline) {
-                                        await new Promise(r => setTimeout(r, HUMAN_READ_1_5X_DELAY_MS));
-                                    }
                                     const nowPerf = performance.now();
                                     const approxTokens = Math.max(1, Math.ceil(tokenChunk.length / 3.8));
                                     generatedTokenChunks += approxTokens;
@@ -1169,15 +1165,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                         if (window.updateAdminTelemetryHUD) {
                                             window.updateAdminTelemetryHUD({
                                                 ttftMs,
-                                                tps: throttledBatteryOffline ? HUMAN_READ_1_5X_TPS : undefined,
                                                 deltaTokens: approxTokens,
                                                 model: modelSelect ? modelSelect.value : 'gemma4-e2b'
                                             });
                                         }
                                     } else {
                                         const elapsedSec = Math.max(0.12, (nowPerf - firstTokenReceivedTime) / 1000);
-                                        const rawTps = +(generatedTokenChunks / elapsedSec).toFixed(1);
-                                        const currentTps = throttledBatteryOffline ? Math.min(rawTps, HUMAN_READ_1_5X_TPS) : rawTps;
+                                        const currentTps = +(generatedTokenChunks / elapsedSec).toFixed(1);
                                         if (window.updateAdminTelemetryHUD) {
                                             window.updateAdminTelemetryHUD({
                                                 tps: currentTps,
@@ -3050,80 +3044,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let adminPeakTps = 0.0;
     let adminTotalSessionTokens = 0;
-
-    // --- Battery Power + Offline / Forced-Offline 1.5x Human Reading Speed Throttling ---
-    // Average human reading speed ≈ 200-240 WPM (~5.0 tk/s) -> 1.5x = 7.5 tk/s (133ms per token)
-    const HUMAN_READ_1_5X_TPS = 7.5;
-    const HUMAN_READ_1_5X_DELAY_MS = 133;
-    let webBatteryState = {
-        supported: false,
-        charging: true,
-        levelPct: 100
-    };
-
-    function isWebForcedOffline() {
-        return localStorage.getItem('off1_force_offline') === 'true';
-    }
-
-    function isWebBatteryOfflineThrottled() {
-        // Step 1: Detect if phone/laptop is running on battery power rather than charging
-        const onBatteryPower = webBatteryState.supported ? !webBatteryState.charging : false;
-        if (!onBatteryPower) return false;
-        // Step 2: Check if offline or forced offline
-        const isOfflineOrForced = !navigator.onLine || isWebForcedOffline();
-        return isOfflineOrForced;
-    }
-
-    function updateWebBatteryOfflineUI() {
-        const banner = document.getElementById('battery-offline-warning-banner');
-        const bannerText = document.getElementById('battery-offline-banner-text');
-        if (!banner) return;
-        const throttled = isWebBatteryOfflineThrottled();
-        if (throttled) {
-            const modeLabel = !navigator.onLine ? 'Offline' : 'Forced Offline Mode';
-            if (bannerText) {
-                bannerText.textContent = `⚡ Running on Battery (${webBatteryState.levelPct}%) in ${modeLabel}: Limiting speed to 1.5× human reading speed (~${HUMAN_READ_1_5X_TPS} tk/s). Warning: Battery usage might increase.`;
-            }
-            banner.classList.remove('hidden');
-        } else {
-            banner.classList.add('hidden');
-        }
-    }
-
-    if (typeof navigator.getBattery === 'function') {
-        navigator.getBattery().then(battery => {
-            const syncBatt = () => {
-                webBatteryState.supported = true;
-                webBatteryState.charging = Boolean(battery.charging);
-                webBatteryState.levelPct = Math.round((battery.level || 1) * 100);
-                updateWebBatteryOfflineUI();
-            };
-            syncBatt();
-            battery.addEventListener('chargingchange', syncBatt);
-            battery.addEventListener('levelchange', syncBatt);
-        }).catch(() => {});
-    }
-    window.addEventListener('online', updateWebBatteryOfflineUI);
-    window.addEventListener('offline', updateWebBatteryOfflineUI);
-
-    const forceOfflineCheckbox = document.getElementById('setting-force-offline');
-    if (forceOfflineCheckbox) {
-        forceOfflineCheckbox.checked = isWebForcedOffline();
-        forceOfflineCheckbox.addEventListener('change', (e) => {
-            const enabled = Boolean(e.target.checked);
-            if (enabled) {
-                const warnMsg = !webBatteryState.charging
-                    ? `Your device is running on battery power (${webBatteryState.levelPct}%). Forcing offline mode limits tokens per second to 1.5× human reading speed (~7.5 tk/s), and battery usage might increase. Proceed?`
-                    : `Warning: Offline AI usage might increase battery consumption. When running on battery power, token speed will be capped to 1.5× human reading speed (~7.5 tk/s). Proceed?`;
-                if (!confirm(warnMsg)) {
-                    e.target.checked = false;
-                    return;
-                }
-            }
-            localStorage.setItem('off1_force_offline', enabled ? 'true' : 'false');
-            updateWebBatteryOfflineUI();
-        });
-    }
 
     window.updateAdminTelemetryHUD = function(metrics = {}) {
         const tpsEl = document.getElementById('admin-stat-tps');
