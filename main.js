@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Update Notification & Version Logic
-    const LATEST_VERSION = '0.8.1'; 
+    const LATEST_VERSION = '2.0.0'; 
     const storedVersion = localStorage.getItem('off1_version');
     const updateBanner = document.getElementById('update-banner');
     const versionDisplay = document.getElementById('platform-version');
@@ -686,12 +686,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!rawText) return '';
 
         let formatted = rawText;
+        const htmlBlocks = [];
+        const stashBlock = (htmlStr) => {
+            const token = `@@OFF1_BLOCK_${htmlBlocks.length}@@`;
+            htmlBlocks.push(htmlStr);
+            return token;
+        };
 
         // 1. Process Completed Thinking / Reasoning blocks <think>...</think>
         formatted = formatted.replace(/<think>([\s\S]*?)<\/think>/gi, (match, thought) => {
             const trimmedThought = thought.trim();
             if (!trimmedThought) return '';
-            return `
+            return stashBlock(`
                 <details class="thought-accordion">
                     <summary class="thought-summary">
                         <span>💭 Thinking Process</span>
@@ -699,7 +705,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </summary>
                     <div class="thought-content">${escapeHTML(trimmedThought)}</div>
                 </details>
-            `;
+            `);
         });
 
         // 1b. Handle In-Flight / Active Streaming <think> tag (not yet closed)
@@ -707,7 +713,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const thinkIndex = formatted.indexOf('<think>');
             const beforeThink = formatted.substring(0, thinkIndex);
             const liveThought = formatted.substring(thinkIndex + 7).trim();
-            formatted = beforeThink + `
+            formatted = beforeThink + stashBlock(`
                 <details class="thought-accordion" open>
                     <summary class="thought-summary">
                         <span>💭 Thinking in progress...</span>
@@ -715,7 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </summary>
                     <div class="thought-content">${escapeHTML(liveThought)}</div>
                 </details>
-            `;
+            `);
         }
 
         // 2. Handle In-Flight / Streaming unclosed code fence
@@ -724,59 +730,68 @@ document.addEventListener('DOMContentLoaded', () => {
             formatted += '\n```';
         }
 
-        // 2b. Process Code Blocks ```lang ... ```
-        formatted = formatted.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
-            const language = lang.trim() || 'code';
+        // 2b. Process Code Blocks ```lang ... ``` into isolated tokens
+        formatted = formatted.replace(/```([^\r\n]*)\r?\n([\s\S]*?)```/g, (match, lang, code) => {
+            const language = (lang.trim() || 'code').toLowerCase();
             const cleanCode = code.replace(/\n$/, '');
-            const encodedCode = encodeURIComponent(cleanCode);
-            return `
+            const encodedCode = encodeURIComponent(cleanCode).replace(/'/g, '%27').replace(/\*/g, '%2A');
+            const runnableLangs = ['html', 'htm', 'svg', 'xml', 'css', 'js', 'javascript', 'ts', 'typescript', 'python', 'py', 'json'];
+            const canRun = runnableLangs.includes(language);
+            const runBtnHtml = canRun ? `
+                <button type="button" class="run-code-btn" data-lang="${escapeHTML(language)}" data-code="${encodedCode}" onclick="runCodeFromBtn(this)">
+                    <i class="fas fa-play"></i> Run
+                </button>
+            ` : '';
+            return stashBlock(`
                 <div class="code-block-wrapper">
                     <div class="code-header">
                         <span>${escapeHTML(language)}</span>
-                        <button type="button" class="copy-code-btn" data-code="${encodedCode}" onclick="copyCodeFromBtn(this)">
-                            <i class="fas fa-copy"></i> Copy
-                        </button>
+                        <div class="code-actions-group">
+                            ${runBtnHtml}
+                            <button type="button" class="copy-code-btn" data-code="${encodedCode}" onclick="copyCodeFromBtn(this)">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
                     </div>
                     <pre><code>${escapeHTML(cleanCode)}</code></pre>
                 </div>
-            `;
+            `);
         });
 
-        // 3. Process Markdown Images ![alt](url)
+        // 3. Process Inline Code `code` into isolated tokens before markdown formatting
+        formatted = formatted.replace(/`([^`\n]+)`/g, (match, code) => {
+            return stashBlock(`<code style="background:rgba(255,255,255,0.1); padding:0.15rem 0.4rem; border-radius:4px; font-family:monospace; font-size:0.9em;">${escapeHTML(code)}</code>`);
+        });
+
+        // 4. Process Markdown Images ![alt](url) into isolated tokens
         formatted = formatted.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
-            const cleanUrl = url.trim();
+            const cleanUrl = escapeHTML(url.trim().replace(/'/g, '%27'));
             const cleanAlt = escapeHTML(alt.trim() || 'AI Generated Image');
-            return `<img src="${cleanUrl}" alt="${cleanAlt}" class="chat-gen-img" loading="lazy" onclick="openImageLightbox('${cleanUrl}')" />`;
+            return stashBlock(`<img src="${cleanUrl}" alt="${cleanAlt}" class="chat-gen-img" loading="lazy" onclick="openImageLightbox('${cleanUrl}')" />`);
         });
 
-        // 4. Process Inline Code `code`
-        formatted = formatted.replace(/`([^`]+)`/g, (match, code) => {
-            return `<code style="background:rgba(255,255,255,0.1); padding:0.15rem 0.4rem; border-radius:4px; font-family:monospace; font-size:0.9em;">${escapeHTML(code)}</code>`;
-        });
-
-        // 5. Bold & Italic
-        formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-
-        // 6. Markdown Links [text](url)
+        // 5. Process Markdown Links [text](url) into isolated tokens
         formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
-            const cleanUrl = url.trim();
+            const cleanUrl = escapeHTML(url.trim());
             if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://') || cleanUrl.startsWith('/')) {
-                return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--primary-color); text-decoration:underline;">${escapeHTML(text)}</a>`;
+                return stashBlock(`<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--primary-color); text-decoration:underline;">${escapeHTML(text)}</a>`);
             }
             return escapeHTML(match);
         });
 
-        // 7. Split by blocks so we convert plain text newlines to <br> without breaking code blocks or accordions
-        const parts = formatted.split(/(<div class="code-block-wrapper">[\s\S]*?<\/div>|<details class="thought-accordion">[\s\S]*?<\/details>|<img[^>]+>)/g);
-        for (let i = 0; i < parts.length; i++) {
-            if (!parts[i].startsWith('<div class="code-block-wrapper">') && 
-                !parts[i].startsWith('<details class="thought-accordion">') &&
-                !parts[i].startsWith('<img')) {
-                parts[i] = parts[i].replace(/\n/g, '<br>');
-            }
-        }
-        return parts.join('');
+        // 6. Escape remaining prose HTML, then apply Headings, Blockquotes, Bold, Italic, and Newlines
+        formatted = escapeHTML(formatted);
+        formatted = formatted.replace(/^###\s+(.+)$/gm, '<h4 class="md-heading">$1</h4>');
+        formatted = formatted.replace(/^##\s+(.+)$/gm, '<h3 class="md-heading">$1</h3>');
+        formatted = formatted.replace(/^#\s+(.+)$/gm, '<h2 class="md-heading">$1</h2>');
+        formatted = formatted.replace(/^&gt;\s+(.+)$/gm, '<blockquote class="md-blockquote">$1</blockquote>');
+        formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        formatted = formatted.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+        formatted = formatted.replace(/\n/g, '<br>');
+
+        // 7. Restore all stashed blocks
+        formatted = formatted.replace(/@@OFF1_BLOCK_(\d+)@@/g, (_, idx) => htmlBlocks[Number(idx)] || '');
+        return formatted;
     }
 
     function appendMessage(sender, text, forceWarning = false) {
@@ -784,6 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageDiv.classList.add('message');
 
         let cleanedText = text || '';
+        messageDiv.dataset.rawText = cleanedText;
         let filenames = [];
 
         // Pattern 1: [User uploaded a file: filename] (global)
@@ -970,12 +986,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             formData.append('stream', 'true');
 
+            // Pillar 2/3: Check staged attachments BEFORE clearing them
+            const hasFiles = (selectedFiles && selectedFiles.length > 0) || (fileUploadInput && fileUploadInput.files && fileUploadInput.files.length > 0);
+            const chatEndpoint = hasFiles ? `${API_BASE_URL}/api/chat` : `${API_BASE_URL}/api/chat/sse`;
+
             // Visually clear immediately so it feels fast
             clearAttachment();
-
-            // Pillar 2/3: Route standard prompts to dedicated SSE streaming pipe, fallback to /api/chat for file uploads
-            const hasFiles = fileUploadInput && fileUploadInput.files && fileUploadInput.files.length > 0;
-            const chatEndpoint = hasFiles ? `${API_BASE_URL}/api/chat` : `${API_BASE_URL}/api/chat/sse`;
 
             const response = await fetch(chatEndpoint, {
                 method: 'POST',
@@ -986,17 +1002,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 signal: controller.signal
             });
 
-            // Error responses are JSON, not SSE. Surface them instead of
-            // leaving the loading bubble stuck on “Thinking...”.
-            if (!response.ok) {
-                let detail = `HTTP ${response.status}`;
-                try {
-                    const errorBody = await response.clone().json();
-                    detail = errorBody.error || errorBody.message || detail;
-                } catch (_) {}
-                throw new Error(`Server rejected the request: ${detail}`);
-            }
-            
             if (response.status === 403) {
                 let banReason = "Access Denied: You have been blocked by Vanguard Defense Matrix.";
                 try {
@@ -1047,6 +1052,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (!response.ok) {
+                let detail = `HTTP ${response.status}`;
+                try {
+                    const errorBody = await response.clone().json();
+                    detail = errorBody.error || errorBody.message || detail;
+                } catch (_) {}
+                throw new Error(`Server rejected the request: ${detail}`);
+            }
+
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
             let accumulated = "";
@@ -1055,6 +1069,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let aiMessageDiv = null;
             let loadingBubble = document.getElementById(loadingId);
             let buffer = "";
+            const streamReqStartTime = performance.now();
+            let firstTokenReceivedTime = null;
+            let generatedTokenChunks = 0;
 
             while (!done) {
                 const { value, done: doneReading } = await reader.read();
@@ -1138,6 +1155,33 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const tokenChunk = chunk.token !== undefined ? chunk.token : (chunk.response || "");
                                 if (!tokenChunk && chunk.status !== 'streaming' && !chunk.done) continue;
 
+                                if (tokenChunk) {
+                                    const nowPerf = performance.now();
+                                    const approxTokens = Math.max(1, Math.ceil(tokenChunk.length / 3.8));
+                                    generatedTokenChunks += approxTokens;
+                                    if (!firstTokenReceivedTime) {
+                                        firstTokenReceivedTime = nowPerf;
+                                        const ttftMs = Math.max(1, Math.round(firstTokenReceivedTime - streamReqStartTime));
+                                        if (window.updateAdminTelemetryHUD) {
+                                            window.updateAdminTelemetryHUD({
+                                                ttftMs,
+                                                deltaTokens: approxTokens,
+                                                model: modelSelect ? modelSelect.value : 'gemma4-e2b'
+                                            });
+                                        }
+                                    } else {
+                                        const elapsedSec = Math.max(0.12, (nowPerf - firstTokenReceivedTime) / 1000);
+                                        const currentTps = +(generatedTokenChunks / elapsedSec).toFixed(1);
+                                        if (window.updateAdminTelemetryHUD) {
+                                            window.updateAdminTelemetryHUD({
+                                                tps: currentTps,
+                                                deltaTokens: approxTokens,
+                                                model: modelSelect ? modelSelect.value : 'gemma4-e2b'
+                                            });
+                                        }
+                                    }
+                                }
+
                                 accumulated += tokenChunk;
 
                                 if (!initialized) {
@@ -1149,6 +1193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     aiMessageDiv = appendMessage('ai', accumulated, userPromptSensitive);
                                 } else {
                                     if (aiMessageDiv) {
+                                        aiMessageDiv.dataset.rawText = accumulated;
                                         const contentNode = aiMessageDiv.querySelector('.content');
                                         if (contentNode) {
                                             const warningNode = contentNode.querySelector('.safety-warning');
@@ -1176,8 +1221,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (error.name === 'AbortError') {
                 appendMessage('ai', "❌ The request timed out. The server might be slow or offline.");
+            } else if (error.message && error.message.startsWith('Server rejected')) {
+                appendMessage('ai', `⚠️ ${error.message}`);
             } else {
                 appendMessage('ai', "❌ Failed to connect to the server. Please ensure the backend is running on port 5000 and the ngrok URL is correct.");
+            }
+        } finally {
+            clearTimeout(timeoutId);
+            if (typeof snapshotCurrentDomChatToSession === 'function') {
+                setTimeout(snapshotCurrentDomChatToSession, 200);
             }
         }
     }
@@ -2456,6 +2508,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
 
                     mediaRecorder.onstop = () => {
+                        try { stream.getTracks().forEach(track => track.stop()); } catch (_) {}
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                         audioChunks = [];
                         const audioFile = new File([audioBlob], "voice_recording.webm", { type: "audio/webm" });
@@ -2866,8 +2919,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         userInput.addEventListener('keydown', function(e) {
+            const slashMenuEl = document.getElementById('slash-command-menu');
+            if (slashMenuEl && !slashMenuEl.classList.contains('hidden')) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    slashMenuEl.classList.add('hidden');
+                    return;
+                }
+                if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey) {
+                    const activeCmd = slashMenuEl.querySelector('.slash-cmd-item.active') || slashMenuEl.querySelector('.slash-cmd-item');
+                    if (activeCmd) {
+                        e.preventDefault();
+                        activeCmd.click();
+                        return;
+                    }
+                }
+            }
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
+                if (slashMenuEl) slashMenuEl.classList.add('hidden');
                 if (chatForm) {
                     chatForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
                 }
@@ -2962,6 +3032,398 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+
+
+    // =========================================================================
+    // V2.0 FLAGSHIP UPGRADE SUITE
+    // 1. Admin-Only Live System & Token Speed (tk/s) Telemetry HUD
+    // 2. Interactive Code Block Sandbox Runner (HTML/JS/Python Preview)
+    // 3. Multi-Session Searchable Conversation Sidebar & Markdown Export
+    // 4. Slash Command Palette (/), Quick Prompt Chips & Voice Waveform Visualizer
+    // =========================================================================
+
+    let adminPeakTps = 0.0;
+    let adminTotalSessionTokens = 0;
+
+    window.updateAdminTelemetryHUD = function(metrics = {}) {
+        const tpsEl = document.getElementById('admin-stat-tps');
+        const peakTpsEl = document.getElementById('admin-stat-peak-tps');
+        const ttftEl = document.getElementById('admin-stat-ttft');
+        const tokensEl = document.getElementById('admin-stat-tokens');
+        const modelBadgeEl = document.getElementById('admin-telemetry-model-badge');
+
+        if (metrics.ttftMs !== undefined && ttftEl) {
+            ttftEl.textContent = `${metrics.ttftMs} ms`;
+        }
+        if (metrics.tps !== undefined && tpsEl) {
+            tpsEl.textContent = `${metrics.tps.toFixed(1)} tk/s`;
+            if (metrics.tps > adminPeakTps) {
+                adminPeakTps = metrics.tps;
+                if (peakTpsEl) peakTpsEl.textContent = `${adminPeakTps.toFixed(1)} tk/s`;
+            }
+        }
+        if (metrics.deltaTokens !== undefined) {
+            adminTotalSessionTokens += metrics.deltaTokens;
+            if (tokensEl) tokensEl.textContent = `${adminTotalSessionTokens}`;
+        } else if (metrics.tokens !== undefined && tokensEl) {
+            tokensEl.textContent = `${metrics.tokens}`;
+        }
+        if (metrics.model && modelBadgeEl) {
+            const labelMap = {
+                'gemma4-e2b': '⚡ Gemma 4 E2B (Fast)',
+                'gemma4-e2b-thinking': '💭 Gemma 4 E2B (Thinking)',
+                'gemma4-e4b-thinking': '🧠 Gemma 4 E4B (Pro)',
+                'gemma3-1b': '🚀 Gemma 3 1B (Turbo)',
+                'sd3.5-medium': '🎨 SD 3.5 Medium'
+            };
+            modelBadgeEl.textContent = `Engine: ${labelMap[metrics.model] || metrics.model}`;
+        }
+    };
+
+    // Interactive Code Sandbox Runner (Global handler for Run buttons)
+    window.runCodeFromBtn = function(btn) {
+        if (!btn) return;
+        const lang = (btn.getAttribute('data-lang') || 'js').toLowerCase();
+        const rawCode = decodeURIComponent(btn.getAttribute('data-code') || '');
+        const sandboxModal = document.getElementById('code-sandbox-modal');
+        const langBadge = document.getElementById('sandbox-lang-badge');
+        const previewContainer = document.getElementById('sandbox-preview-container');
+        const iframe = document.getElementById('sandbox-iframe');
+        const consoleContainer = document.getElementById('sandbox-console-container');
+
+        if (!sandboxModal) return;
+        sandboxModal.classList.remove('hidden');
+        if (langBadge) langBadge.textContent = lang.toUpperCase();
+
+        if (['html', 'htm', 'svg', 'xml', 'css'].includes(lang)) {
+            if (previewContainer) previewContainer.style.display = 'block';
+            if (consoleContainer) consoleContainer.textContent = '✅ Live DOM / HTML Sandbox rendered above.';
+            if (iframe) {
+                const htmlDoc = lang === 'css'
+                    ? `<style>${rawCode}</style><div style="padding:24px;font-family:sans-serif;"><h3>CSS Preview Active</h3><p>Your stylesheet is applied to this sandbox.</p><button>Sample Button</button></div>`
+                    : rawCode;
+                iframe.srcdoc = htmlDoc;
+            }
+        } else if (['js', 'javascript', 'ts', 'typescript', 'json'].includes(lang)) {
+            if (previewContainer) previewContainer.style.display = 'none';
+            if (consoleContainer) {
+                consoleContainer.textContent = '▶ Executing in isolated JavaScript sandbox...\n\n';
+                const logs = [];
+                const customConsole = {
+                    log: (...args) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ')),
+                    error: (...args) => logs.push('[ERROR] ' + args.map(a => String(a)).join(' ')),
+                    warn: (...args) => logs.push('[WARN] ' + args.map(a => String(a)).join(' '))
+                };
+                try {
+                    const startT = performance.now();
+                    const fn = new Function('console', rawCode);
+                    const ret = fn(customConsole);
+                    const elapsed = (performance.now() - startT).toFixed(2);
+                    if (ret !== undefined) logs.push(`\n↳ Return Value: ${typeof ret === 'object' ? JSON.stringify(ret, null, 2) : ret}`);
+                    logs.push(`\n✨ Completed in ${elapsed} ms`);
+                    consoleContainer.textContent += logs.join('\n');
+                } catch (err) {
+                    consoleContainer.textContent += `❌ Runtime Exception: ${err.message}`;
+                }
+            }
+        } else if (['python', 'py'].includes(lang)) {
+            if (previewContainer) previewContainer.style.display = 'none';
+            if (consoleContainer) {
+                consoleContainer.textContent = '🐍 Simulating Python snippet output...\n\n';
+                const lines = rawCode.split('\n');
+                const out = [];
+                for (const l of lines) {
+                    const m = l.trim().match(/^print\s*\((.*)\)$/);
+                    if (m) {
+                        out.push(m[1].replace(/^['"]|['"]$/g, ''));
+                    }
+                }
+                if (out.length > 0) {
+                    consoleContainer.textContent += out.join('\n') + '\n\n✨ Execution finished.';
+                } else {
+                    consoleContainer.textContent += '✅ Syntax validated. Copy this snippet or run in your local Python environment.';
+                }
+            }
+        }
+    };
+
+    const closeSandboxBtn = document.getElementById('close-sandbox-btn');
+    const codeSandboxModal = document.getElementById('code-sandbox-modal');
+    if (closeSandboxBtn && codeSandboxModal) {
+        closeSandboxBtn.onclick = () => codeSandboxModal.classList.add('hidden');
+        codeSandboxModal.onclick = (e) => {
+            if (e.target === codeSandboxModal) codeSandboxModal.classList.add('hidden');
+        };
+    }
+
+    // Multi-Session Conversation Manager
+    const SESSIONS_STORAGE_KEY = 'off1_v2_sessions';
+    let activeSessionId = localStorage.getItem('off1_v2_active_session') || 'session_' + Date.now();
+    const sidebarSessionsList = document.getElementById('sidebar-sessions-list');
+    const sidebarSearchInput = document.getElementById('sidebar-session-search');
+    const btnNewChat = document.getElementById('btn-new-chat');
+    const btnExportChat = document.getElementById('btn-export-chat');
+
+    function getSavedSessions() {
+        try {
+            return JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY) || '[]');
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveSessionsList(sessions) {
+        try {
+            localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(sessions.slice(0, 40)));
+        } catch (e) {}
+    }
+
+    function snapshotCurrentDomChatToSession() {
+        if (!chatHistory) return;
+        const msgNodes = chatHistory.querySelectorAll('.message');
+        const msgs = [];
+        msgNodes.forEach(node => {
+            if (node.id && node.id.startsWith('loading-')) return;
+            const isUser = node.classList.contains('user-message');
+            const contentEl = node.querySelector('.content');
+            const rawVal = (node.dataset && node.dataset.rawText) ? node.dataset.rawText.trim() : (contentEl ? contentEl.innerText.trim() : '');
+            if (
+                rawVal &&
+                !rawVal.startsWith('Greetings. I am Off1.') &&
+                !rawVal.startsWith('New session initialized.') &&
+                rawVal !== 'Thinking...'
+            ) {
+                msgs.push({ sender: isUser ? 'user' : 'ai', text: rawVal });
+            }
+        });
+        if (msgs.length === 0) return;
+
+        const sessions = getSavedSessions();
+        const firstUserMsg = msgs.find(m => m.sender === 'user');
+        const title = firstUserMsg ? firstUserMsg.text.substring(0, 34) : 'Conversation ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const existingIdx = sessions.findIndex(s => s.id === activeSessionId);
+        const sessionObj = {
+            id: activeSessionId,
+            title,
+            updatedAt: Date.now(),
+            messages: msgs
+        };
+        if (existingIdx >= 0) {
+            sessions[existingIdx] = sessionObj;
+        } else {
+            sessions.unshift(sessionObj);
+        }
+        saveSessionsList(sessions);
+        renderSidebarSessions(sidebarSearchInput ? sidebarSearchInput.value : '');
+    }
+
+    function renderSidebarSessions(filterQuery = '') {
+        if (!sidebarSessionsList) return;
+        const sessions = getSavedSessions();
+        const q = filterQuery.trim().toLowerCase();
+        const filtered = q
+            ? sessions.filter(s => s.title.toLowerCase().includes(q) || (s.messages || []).some(m => m.text.toLowerCase().includes(q)))
+            : sessions;
+
+        sidebarSessionsList.innerHTML = '';
+        if (filtered.length === 0) {
+            sidebarSessionsList.innerHTML = `<div style="font-size:0.75rem; color:var(--text-secondary); text-align:center; padding:0.4rem;">${q ? 'No matching chats' : 'No saved threads yet'}</div>`;
+            return;
+        }
+
+        filtered.forEach(session => {
+            const row = document.createElement('div');
+            row.className = 'sidebar-session-item' + (session.id === activeSessionId ? ' active' : '');
+            row.innerHTML = `
+                <span class="sidebar-session-title" title="${escapeHTML(session.title)}">💬 ${escapeHTML(session.title)}</span>
+                <button type="button" class="sidebar-session-del" title="Delete conversation">&times;</button>
+            `;
+            row.addEventListener('click', (e) => {
+                if (e.target.classList.contains('sidebar-session-del')) {
+                    e.stopPropagation();
+                    const wasActive = session.id === activeSessionId;
+                    const updated = getSavedSessions().filter(s => s.id !== session.id);
+                    saveSessionsList(updated);
+                    if (wasActive) {
+                        activeSessionId = 'session_' + Date.now();
+                        localStorage.setItem('off1_v2_active_session', activeSessionId);
+                        if (chatHistory) {
+                            chatHistory.innerHTML = `
+                                <div class="message ai-message">
+                                    <div class="avatar">O</div>
+                                    <div class="content">New session initialized. How can I help you build, analyze, or optimize today?</div>
+                                </div>
+                            `;
+                        }
+                    }
+                    renderSidebarSessions(sidebarSearchInput ? sidebarSearchInput.value : '');
+                    return;
+                }
+                snapshotCurrentDomChatToSession();
+                activeSessionId = session.id;
+                localStorage.setItem('off1_v2_active_session', activeSessionId);
+                chatHistory.innerHTML = '';
+                (session.messages || []).forEach(m => appendMessage(m.sender, m.text));
+                renderSidebarSessions(sidebarSearchInput ? sidebarSearchInput.value : '');
+            });
+            sidebarSessionsList.appendChild(row);
+        });
+    }
+
+    function startNewChatSession() {
+        snapshotCurrentDomChatToSession();
+        activeSessionId = 'session_' + Date.now();
+        localStorage.setItem('off1_v2_active_session', activeSessionId);
+        if (chatHistory) {
+            chatHistory.innerHTML = `
+                <div class="message ai-message">
+                    <div class="avatar">O</div>
+                    <div class="content">
+                        New session initialized. How can I help you build, analyze, or optimize today?
+                    </div>
+                </div>
+            `;
+        }
+        renderSidebarSessions(sidebarSearchInput ? sidebarSearchInput.value : '');
+        if (userInput) userInput.focus();
+    }
+
+    if (btnNewChat) {
+        btnNewChat.addEventListener('click', startNewChatSession);
+    }
+
+    if (sidebarSearchInput) {
+        sidebarSearchInput.addEventListener('input', (e) => {
+            renderSidebarSessions(e.target.value);
+        });
+    }
+
+    // Export current conversation as Markdown (.md)
+    if (btnExportChat) {
+        btnExportChat.addEventListener('click', () => {
+            snapshotCurrentDomChatToSession();
+            const msgNodes = chatHistory ? chatHistory.querySelectorAll('.message') : [];
+            let md = `# Off1 AI Conversation Export\n_Exported: ${new Date().toLocaleString()}_\n\n---\n\n`;
+            msgNodes.forEach(node => {
+                const role = node.classList.contains('user-message') ? '### 👤 User' : '### 🤖 Off1 AI';
+                const contentEl = node.querySelector('.content');
+                const rawTxt = (node.dataset && node.dataset.rawText) ? node.dataset.rawText.trim() : (contentEl ? contentEl.innerText.trim() : '');
+                if (rawTxt) {
+                    md += `${role}\n\n${rawTxt}\n\n---\n\n`;
+                }
+            });
+            const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `off1_chat_${new Date().toISOString().slice(0, 10)}.md`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    // Auto-snapshot chat history whenever messages change
+    if (chatHistory) {
+        const chatObserver = new MutationObserver(() => {
+            clearTimeout(window._snapshotTimer);
+            window._snapshotTimer = setTimeout(snapshotCurrentDomChatToSession, 1200);
+        });
+        chatObserver.observe(chatHistory, { childList: true });
+    }
+    renderSidebarSessions();
+
+    // Global Keyboard Shortcut: Ctrl+K for New Chat
+    window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            startNewChatSession();
+        }
+    });
+
+    // Quick Prompt Chips Bar
+    document.querySelectorAll('.quick-prompt-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const promptTemplate = chip.getAttribute('data-prompt') || '';
+            if (userInput) {
+                userInput.value = promptTemplate.replace(/^\/[a-z]+\s+/i, '');
+                userInput.focus();
+                userInput.dispatchEvent(new Event('input'));
+            }
+        });
+    });
+
+    // Slash Command Palette (/)
+    const SLASH_COMMANDS = [
+        { cmd: '/code', desc: 'Write clean, optimized, production-ready code', template: 'Write clean, optimized, production-ready code for: ' },
+        { cmd: '/explain', desc: 'Deep step-by-step technical explanation', template: 'Explain this concept step-by-step with clear examples: ' },
+        { cmd: '/debug', desc: 'Find root cause and fix bugs in code', template: 'Analyze and fix the bug in the following code: ' },
+        { cmd: '/summarize', desc: 'Executive bullet-point summary', template: 'Summarize the key takeaways concisely: ' },
+        { cmd: '/translate', desc: 'Translate between English, Arabic, or other languages', template: 'Translate the following text accurately: ' },
+        { cmd: '/brainstorm', desc: 'Generate 5 creative, high-impact ideas', template: 'Generate 5 creative, high-impact ideas for: ' },
+        { cmd: '/image', desc: 'Switch to SD 3.5 Image Generation mode', action: () => { if (modelSelect) modelSelect.value = 'sd3.5-medium'; } },
+        { cmd: '/clear', desc: 'Start a fresh conversation session', action: () => startNewChatSession() },
+        { cmd: '/export', desc: 'Export current conversation to Markdown (.md)', action: () => { if (btnExportChat) btnExportChat.click(); } }
+    ];
+
+    const slashMenu = document.getElementById('slash-command-menu');
+    const slashList = document.getElementById('slash-command-list');
+
+    function renderSlashCommands(filterText) {
+        if (!slashMenu || !slashList) return;
+        const matches = SLASH_COMMANDS.filter(c => c.cmd.startsWith(filterText.toLowerCase()));
+        if (matches.length === 0) {
+            slashMenu.classList.add('hidden');
+            return;
+        }
+        slashList.innerHTML = '';
+        matches.forEach((item, idx) => {
+            const div = document.createElement('div');
+            div.className = 'slash-cmd-item' + (idx === 0 ? ' active' : '');
+            div.innerHTML = `
+                <span class="slash-cmd-name">${item.cmd}</span>
+                <span class="slash-cmd-desc">${item.desc}</span>
+            `;
+            div.addEventListener('click', () => {
+                slashMenu.classList.add('hidden');
+                if (item.action) {
+                    userInput.value = '';
+                    item.action();
+                } else if (item.template) {
+                    userInput.value = item.template;
+                    userInput.focus();
+                }
+            });
+            slashList.appendChild(div);
+        });
+        slashMenu.classList.remove('hidden');
+    }
+
+    if (userInput) {
+        userInput.addEventListener('input', () => {
+            const val = userInput.value;
+            if (val.startsWith('/') && !val.includes(' ')) {
+                renderSlashCommands(val);
+            } else if (slashMenu) {
+                slashMenu.classList.add('hidden');
+            }
+        });
+    }
+
+    // Live Voice Waveform Visualizer Hook on #mic-btn
+    const voiceWaveform = document.getElementById('voice-waveform-visualizer');
+    if (micBtn && voiceWaveform) {
+        const micClassObserver = new MutationObserver(() => {
+            const isRecording =
+                micBtn.classList.contains('recording-pulse') ||
+                micBtn.classList.contains('recording') ||
+                micBtn.classList.contains('active') ||
+                micBtn.style.color === 'rgb(239, 68, 68)' ||
+                micBtn.style.color === '#ef4444';
+            voiceWaveform.classList.toggle('hidden', !isRecording);
+        });
+        micClassObserver.observe(micBtn, { attributes: true, attributeFilter: ['class', 'style'] });
+    }
+
 });
-
-

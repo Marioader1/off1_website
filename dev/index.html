@@ -117,7 +117,7 @@
                 <h1 class="logo glow-text">Off1 <span class="secret-clue" data-clue-pos="1" style="font-size:0.5rem; opacity:0.15; cursor:pointer;" title="Clue 1/5: Letter [1] of cipher">S</span></h1>
                 <p class="subtitle">System Online</p>
                 <button class="sidebar-toggle-desktop" id="sidebar-toggle-desktop" aria-label="Toggle Sidebar">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></button>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg></button>
             </div>
             <div class="user-profile" id="user-profile-section">
                 <div class="user-avatar" id="user-initials">G</div>
@@ -127,8 +127,22 @@
                 </div>
             </div>
             <div class="nav-menu">
+                <button class="nav-item new-chat-btn" id="btn-new-chat" style="background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(168, 85, 247, 0.2)); border: 1px solid rgba(56, 189, 248, 0.45); font-weight: 700; color: #f8fafc; display: flex; align-items: center; justify-content: space-between;">
+                    <span><i class="fas fa-plus" style="margin-right: 8px; color: #38bdf8;"></i> New Chat</span>
+                    <kbd style="font-size: 0.68rem; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; color: #94a3b8;">Ctrl+K</kbd>
+                </button>
+                <div class="sidebar-sessions-panel">
+                    <div class="sidebar-search-wrapper">
+                        <i class="fas fa-search sidebar-search-icon"></i>
+                        <input type="text" id="sidebar-session-search" placeholder="Search conversations..." autocomplete="off">
+                    </div>
+                    <div id="sidebar-sessions-list" class="sidebar-sessions-list">
+                        <!-- Multi-session conversation threads injected dynamically -->
+                    </div>
+                </div>
                 <button class="nav-item active" id="btn-session"><span>Current Session</span></button>
-                <button class="nav-item" id="btn-history"><span>History Sync</span></button>
+                <button class="nav-item" id="btn-history"><span>Cloud History Sync</span></button>
+                <button class="nav-item" id="btn-export-chat"><span><i class="fas fa-download" style="margin-right: 6px; color: #38bdf8;"></i> Export Chat (.md)</span></button>
                 <button class="nav-item" id="btn-settings"><span>Settings</span></button>
                 <button class="nav-item text-success" id="btn-support"><span>Support Me ❤️ <span class="secret-clue" data-clue-pos="2" style="font-size:0.6rem; opacity:0.25; cursor:pointer;" title="Clue 2/5: Letter [2] of cipher">W</span></span></button>
                 <button class="nav-item text-warning d-none" id="btn-admin"><span>Admin Panel</span></button>
@@ -136,7 +150,7 @@
             </div>
             <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 1rem;">
                 <button class="nav-item logout-btn text-danger w-100" id="logout-btn"><span>Logout</span></button>
-                <div class="version-label" id="btn-changelog" style="cursor: pointer; text-decoration: underline;" title="View Changelog">v<span id="platform-version">0.8.1</span> <span class="secret-clue" data-clue-pos="5" style="font-size:0.5rem; opacity:0.15; cursor:pointer;" title="Clue 5/5: Letter [5] of cipher">T</span></div>
+                <div class="version-label" id="btn-changelog" style="cursor: pointer; text-decoration: underline;" title="View Changelog">v<span id="platform-version">2.0.0</span> <span class="secret-clue" data-clue-pos="5" style="font-size:0.5rem; opacity:0.15; cursor:pointer;" title="Clue 5/5: Letter [5] of cipher">T</span></div>
             </div>
 
         </aside>
@@ -168,7 +182,7 @@
             <div class="chat-history" id="chat-history">
                 <!-- Messages will be injected here -->
                 <div class="message ai-message">
-                    <div class="avatar">J</div>
+                    <div class="avatar">O</div>
                     <div class="content">
                         Greetings. I am Off1. How may I assist you today?
                     </div>
@@ -182,7 +196,31 @@
                 </svg>
             </button>
 
-            <div class="input-area">
+            <div class="input-area" style="position: relative;">
+                <!-- Slash Command Palette Popup -->
+                <div id="slash-command-menu" class="slash-command-menu hidden">
+                    <div class="slash-menu-header">⚡ Quick Slash Commands</div>
+                    <div id="slash-command-list" class="slash-command-list"></div>
+                </div>
+
+                <!-- Quick Prompt Templates Bar -->
+                <div id="quick-prompts-bar" class="quick-prompts-bar">
+                    <button type="button" class="quick-prompt-chip" data-prompt="/code Write clean, optimized, production-ready code for: ">⚡ Optimize Code</button>
+                    <button type="button" class="quick-prompt-chip" data-prompt="/explain Explain this concept step-by-step with clear examples: ">🧠 Deep Explain</button>
+                    <button type="button" class="quick-prompt-chip" data-prompt="/debug Analyze and fix the bug in the following code: ">🐞 Debug Issue</button>
+                    <button type="button" class="quick-prompt-chip" data-prompt="/summarize Summarize the key takeaways concisely: ">📝 Summarize</button>
+                    <button type="button" class="quick-prompt-chip" data-prompt="/translate Translate the following text accurately: ">🌐 Translate</button>
+                    <button type="button" class="quick-prompt-chip" data-prompt="/brainstorm Generate 5 creative, high-impact ideas for: ">💡 Brainstorm</button>
+                </div>
+
+                <!-- Live Voice Waveform Visualizer -->
+                <div id="voice-waveform-visualizer" class="voice-waveform-visualizer hidden">
+                    <div class="waveform-status"><span class="waveform-dot"></span> Listening... Speak clearly</div>
+                    <div class="waveform-bars">
+                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                </div>
+
                 <div id="attachment-preview-area" class="hidden"></div>
                 <form id="chat-form">
                     <input type="file" id="file-upload-input" accept=".pdf,.docx,.pptx,.xlsx,image/*,audio/*" style="display: none;" multiple>
@@ -208,7 +246,7 @@
                     </div>
                     <!-- Anti-Bot Honeypot Trap (Invisible to humans, auto-filled by scrapers/bots) -->
                     <input type="text" name="hp_bot_trap" id="hp_bot_trap" style="display:none !important; position:absolute; left:-9999px;" tabindex="-1" autocomplete="off" aria-hidden="true">
-                    <textarea id="user-input" placeholder="Message Off1... (Shift+Enter for newline)" rows="1" autocomplete="off"></textarea>
+                    <textarea id="user-input" placeholder="Message Off1... (Type '/' for commands, Shift+Enter for newline)" rows="1" autocomplete="off"></textarea>
                     <button type="button" id="mic-btn" class="media-btn" aria-label="Live Audio">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
@@ -381,7 +419,35 @@
                 </button>
             </div>
             
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; margin-top: 1.5rem;">
+            <!-- Admin-Only Live AI & System Telemetry HUD -->
+            <div class="admin-live-telemetry-hud" style="margin-top: 1rem; padding: 1rem 1.25rem; background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.75)); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,0.4);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.06em;">
+                        <i class="fas fa-microchip"></i> <span>Real-Time AI Inference & System Telemetry (Admin Only)</span>
+                    </div>
+                    <span id="admin-telemetry-model-badge" style="font-size: 0.78rem; padding: 0.2rem 0.6rem; border-radius: 999px; background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.45); color: #c084fc; font-weight: 600;">Engine: Gemma 4 E2B</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.85rem;">
+                    <div class="stat-box" style="border-left: 3px solid #38bdf8;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">Live Token Speed</span>
+                        <strong id="admin-stat-tps" style="font-size: 1.2rem; color: #38bdf8; font-family: monospace;">0.0 tk/s</strong>
+                    </div>
+                    <div class="stat-box" style="border-left: 3px solid #a855f7;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">Peak Session Speed</span>
+                        <strong id="admin-stat-peak-tps" style="font-size: 1.2rem; color: #c084fc; font-family: monospace;">0.0 tk/s</strong>
+                    </div>
+                    <div class="stat-box" style="border-left: 3px solid #10b981;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">TTFT Latency</span>
+                        <strong id="admin-stat-ttft" style="font-size: 1.2rem; color: #34d399; font-family: monospace;">-- ms</strong>
+                    </div>
+                    <div class="stat-box" style="border-left: 3px solid #f59e0b;">
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">Tokens Generated</span>
+                        <strong id="admin-stat-tokens" style="font-size: 1.2rem; color: #fbbf24; font-family: monospace;">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; margin-top: 1.25rem;">
                 <!-- Left Section: Stats (3 columns of 5) -->
                 <div style="grid-column: span 3; display: flex; flex-direction: column; gap: 1.25rem;">
                     <div id="admin-stats" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
@@ -724,6 +790,24 @@
                     <i class="fas fa-sign-out-alt"></i> Return to Login
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Interactive Live Code Sandbox Modal -->
+    <div id="code-sandbox-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" style="z-index: 15000;">
+        <div class="modal-content glass-panel" style="max-width: 960px; width: 92vw; text-align: left; padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <i class="fas fa-play-circle" style="color: #10b981; font-size: 1.3rem;"></i>
+                    <h3 class="glow-text" style="margin: 0; font-size: 1.15rem;">Interactive Code Sandbox</h3>
+                    <span id="sandbox-lang-badge" style="font-size: 0.75rem; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; padding: 0.15rem 0.5rem; border-radius: 6px; font-family: monospace;">js</span>
+                </div>
+                <button type="button" id="close-sandbox-btn" class="btn btn-secondary" style="padding: 0.35rem 0.8rem; font-size: 0.85rem;">&times; Close</button>
+            </div>
+            <div id="sandbox-preview-container" style="display: none; width: 100%; height: 420px; border-radius: 10px; overflow: hidden; border: 1px solid var(--glass-border); background: #fff; margin-bottom: 0.75rem;">
+                <iframe id="sandbox-iframe" sandbox="allow-scripts" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+            <div id="sandbox-console-container" style="background: #090d16; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 1rem; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.88rem; color: #e2e8f0; max-height: 360px; overflow-y: auto; white-space: pre-wrap;"></div>
         </div>
     </div>
 

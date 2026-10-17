@@ -2221,5 +2221,370 @@ button:active, .btn:active, .action-btn:active, .send-btn:active {
     }
 }
 
+/* ==========================================================================
+   V2.0 FLAGSHIP UPGRADE: MULTI-SESSION SIDEBAR, SLASH PALETTE, WAVEFORM & CODE SANDBOX
+   ========================================================================== */
+
+.sidebar-sessions-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0.4rem 0 0.6rem;
+    padding: 0.6rem;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+}
+
+.sidebar-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-search-icon {
+    position: absolute;
+    left: 10px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+#sidebar-session-search {
+    width: 100%;
+    padding: 0.45rem 0.6rem 0.45rem 1.85rem;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#sidebar-session-search:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+.sidebar-sessions-list {
+    max-height: 155px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    scrollbar-width: thin;
+}
+
+.sidebar-session-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.45rem 0.65rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.sidebar-session-item:hover {
+    background: rgba(56, 189, 248, 0.1);
+    color: var(--text-primary);
+    border-color: rgba(56, 189, 248, 0.25);
+}
+
+.sidebar-session-item.active {
+    background: rgba(56, 189, 248, 0.16);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.4);
+    font-weight: 600;
+}
+
+.sidebar-session-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 6px;
+}
+
+.sidebar-session-del {
+    background: transparent !important;
+    border: none !important;
+    color: #ef4444;
+    opacity: 0.55;
+    cursor: pointer;
+    font-size: 0.78rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    box-shadow: none !important;
+}
+
+.sidebar-session-del:hover {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Quick Prompt Chips Bar */
+.quick-prompts-bar {
+    display: flex;
+    gap: 0.45rem;
+    overflow-x: auto;
+    padding: 0.2rem 0.1rem 0.55rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.quick-prompts-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.quick-prompt-chip {
+    flex-shrink: 0;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    color: #cbd5e1;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    white-space: nowrap;
+}
+
+.quick-prompt-chip:hover {
+    background: rgba(56, 189, 248, 0.18);
+    border-color: var(--primary-color);
+    color: #ffffff;
+}
+
+/* Slash Command Palette */
+.slash-command-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 1rem;
+    right: 1rem;
+    max-width: 460px;
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    border-radius: 14px;
+    padding: 0.5rem;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65);
+    z-index: 2500;
+    animation: smoothFadeInUp 0.2s ease forwards;
+}
+
+.slash-menu-header {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #38bdf8;
+    padding: 0.3rem 0.6rem 0.45rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 0.3rem;
+}
+
+.slash-command-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.slash-cmd-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.7rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.slash-cmd-item:hover, .slash-cmd-item.active {
+    background: rgba(56, 189, 248, 0.18);
+}
+
+.slash-cmd-name {
+    font-family: monospace;
+    font-weight: 700;
+    color: #38bdf8;
+    font-size: 0.85rem;
+}
+
+.slash-cmd-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* Voice Waveform Visualizer */
+.voice-waveform-visualizer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.15), rgba(56, 189, 248, 0.15));
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    animation: smoothFadeInUp 0.25s ease forwards;
+}
+
+.waveform-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #f87171;
+}
+
+.waveform-dot {
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #ef4444;
+    animation: statusPulse 1s infinite;
+}
+
+.waveform-bars {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 22px;
+}
+
+.waveform-bars span {
+    display: inline-block;
+    width: 3px;
+    height: 6px;
+    border-radius: 99px;
+    background: linear-gradient(180deg, #38bdf8, #a855f7);
+    animation: waveBarBounce 0.85s ease-in-out infinite;
+}
+
+.waveform-bars span:nth-child(2n) { animation-delay: 0.15s; }
+.waveform-bars span:nth-child(3n) { animation-delay: 0.3s; }
+.waveform-bars span:nth-child(4n) { animation-delay: 0.45s; }
+
+@keyframes waveBarBounce {
+    0%, 100% { height: 5px; opacity: 0.5; }
+    50% { height: 20px; opacity: 1; }
+}
+
+/* Code Block Action Buttons & Markdown Enhancements */
+.code-actions-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.run-code-btn {
+    background: rgba(16, 185, 129, 0.18);
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    color: #34d399;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.run-code-btn:hover {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.msg-action-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    opacity: 0.65;
+    transition: opacity 0.2s ease;
+}
+
+.content:hover .msg-action-bar {
+    opacity: 1;
+}
+
+.msg-action-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: none !important;
+}
+
+.msg-action-btn:hover {
+    color: var(--primary-color);
+    border-color: rgba(56, 189, 248, 0.35) !important;
+}
+
+.md-heading {
+    margin: 0.65rem 0 0.35rem;
+    color: #f8fafc;
+    font-weight: 700;
+}
+
+.md-blockquote {
+    border-left: 3px solid var(--primary-color);
+    padding: 0.4rem 0.85rem;
+    margin: 0.5rem 0;
+    background: rgba(56, 189, 248, 0.08);
+    border-radius: 0 8px 8px 0;
+    color: #cbd5e1;
+    font-style: italic;
+}
 
 
+
+
+
+
+/* === v2.0 Bugfixes: Collapsed Sidebar, Light Mode & Missing Variables === */
+:root {
+    --bg-secondary: rgba(15, 23, 42, 0.75);
+    --text-main: #f8fafc;
+}
+
+body.light-mode {
+    --bg-color: #f1f5f9;
+    --bg-secondary: rgba(255, 255, 255, 0.9);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(15, 23, 42, 0.12);
+    --text-primary: #0f172a;
+    --text-main: #0f172a;
+    --text-secondary: #475569;
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.sidebar.collapsed .sidebar-sessions-panel,
+.sidebar.collapsed .new-chat-btn kbd {
+    display: none !important;
+}
+
+.sidebar.collapsed .new-chat-btn {
+    justify-content: center !important;
+}
