@@ -2588,3 +2588,205 @@ body.light-mode {
 .sidebar.collapsed .new-chat-btn {
     justify-content: center !important;
 }
+
+/* =========================================================================
+   V2.1 ULTRA-POLISHED MICRO-INTERACTIONS & FLUID ANIMATIONS
+   ========================================================================= */
+
+@keyframes autoEnginePulse {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.2), inset 0 0 8px rgba(56, 189, 248, 0.12);
+        border-color: rgba(16, 185, 129, 0.45);
+    }
+    50% {
+        box-shadow: 0 0 18px rgba(56, 189, 248, 0.42), inset 0 0 12px rgba(16, 185, 129, 0.25);
+        border-color: rgba(56, 189, 248, 0.75);
+    }
+}
+
+@keyframes autoBadgePop {
+    0% { transform: scale(0.88); filter: brightness(1.4); }
+    60% { transform: scale(1.08); }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+
+#auto-model-badge {
+    animation: autoEnginePulse 3.2s ease-in-out infinite;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+#auto-model-badge::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 70%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.24), transparent);
+    transform: skewX(-22deg);
+    animation: autoBadgeSheen 4.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes autoBadgeSheen {
+    0%, 65% { left: -120%; }
+    100% { left: 160%; }
+}
+
+#auto-model-badge:hover {
+    transform: translateY(-1px) scale(1.04);
+}
+
+#auto-model-badge.auto-badge-pop {
+    animation: autoBadgePop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, autoEnginePulse 3.2s ease-in-out infinite;
+}
+
+/* Interactive Chat Input Bar Focus Aura */
+#chat-form {
+    transition: border-color 0.25s ease, box-shadow 0.3s ease, transform 0.22s ease;
+}
+
+#chat-form:focus-within {
+    border-color: rgba(56, 189, 248, 0.65) !important;
+    box-shadow: 0 0 24px rgba(56, 189, 248, 0.24), 0 8px 30px rgba(0, 0, 0, 0.45);
+    transform: translateY(-1px);
+}
+
+.copy-code-btn.copied {
+    background: rgba(16, 185, 129, 0.25) !important;
+    border-color: rgba(16, 185, 129, 0.7) !important;
+    color: #34d399 !important;
+    transform: scale(1.05);
+}
+
+/* Spring-Physics Message Bubble Entrance */
+@keyframes msgSpringInAI {
+    0% {
+        opacity: 0;
+        transform: translateY(16px) translateX(-8px) scale(0.96);
+        filter: blur(3px);
+    }
+    70% {
+        opacity: 1;
+        transform: translateY(-2px) translateX(0) scale(1.005);
+        filter: blur(0);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) translateX(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes msgSpringInUser {
+    0% {
+        opacity: 0;
+        transform: translateY(16px) translateX(8px) scale(0.96);
+        filter: blur(3px);
+    }
+    70% {
+        opacity: 1;
+        transform: translateY(-2px) translateX(0) scale(1.005);
+        filter: blur(0);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) translateX(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+.message.ai-message {
+    animation: msgSpringInAI 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.message.user-message {
+    animation: msgSpringInUser 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* AI Avatar Holographic Breathing Halo */
+@keyframes avatarOrbHalo {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.4), 0 0 20px rgba(168, 85, 247, 0.18);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.75), 0 0 28px rgba(168, 85, 247, 0.4);
+        transform: scale(1.05);
+    }
+}
+
+.ai-message .avatar {
+    animation: avatarOrbHalo 3s ease-in-out infinite;
+}
+
+/* Staggered 3-Dot Thinking Wave */
+.ai-thinking-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.ai-thinking-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ai-thinking-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #38bdf8, #a855f7);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+    animation: thinkingDotBounce 0.9s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.ai-thinking-dots span:nth-child(2) {
+    animation-delay: 0.16s;
+}
+
+.ai-thinking-dots span:nth-child(3) {
+    animation-delay: 0.32s;
+}
+
+@keyframes thinkingDotBounce {
+    0%, 80%, 100% {
+        transform: translateY(0) scale(0.85);
+        opacity: 0.55;
+    }
+    40% {
+        transform: translateY(-6px) scale(1.15);
+        opacity: 1;
+    }
+}
+
+/* Quick Prompt Chips & Interactive Button Physics */
+.quick-prompt-chip {
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quick-prompt-chip:hover {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 6px 16px rgba(56, 189, 248, 0.25);
+}
+
+.quick-prompt-chip:active {
+    transform: translateY(0) scale(0.95);
+}
+
+#send-btn, .new-chat-btn, .run-code-btn, .copy-code-btn {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background 0.2s ease;
+}
+
+#send-btn:hover {
+    transform: translateY(-2px) scale(1.06);
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.55);
+}
+
+#send-btn:active, .new-chat-btn:active, .run-code-btn:active, .copy-code-btn:active {
+    transform: scale(0.93);
+}
+

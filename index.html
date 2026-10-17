@@ -198,13 +198,10 @@
                         </svg>
                     </button>
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <select id="model-select" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 8px; padding: 0.5rem 0.6rem; outline: none; font-size: 0.85rem; font-family: inherit; cursor: pointer; backdrop-filter: blur(8px);">
-                            <option value="gemma4-e2b" selected>⚡ Fast Mode</option>
-                            <option value="gemma4-e2b-thinking">💭 Thinking Mode</option>
-                            <option value="gemma4-e4b-thinking">🧠 Pro Mode</option>
-                            <option value="gemma3-1b">🚀 Turbo Mode</option>
-                            <option value="sd3.5-medium">🎨 Image Generation</option>
-                        </select>
+                        <div id="auto-model-badge" title="Off1 automatically selects the fastest, most battery-efficient LLM for every prompt" style="background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; border-radius: 999px; padding: 0.42rem 0.75rem; font-size: 0.78rem; font-weight: 600; white-space: nowrap; user-select: none; backdrop-filter: blur(8px);">
+                            🤖 Auto Engine
+                        </div>
+                        <input type="hidden" id="model-select" value="qwen3-0.6b" />
                     </div>
 
                     <button type="submit" id="send-btn" aria-label="Send message">
