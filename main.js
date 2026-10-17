@@ -330,8 +330,12 @@ document.addEventListener('DOMContentLoaded', () => {
         syncUserRole(); // Run silently in background
     }
 
+    // Clean up any legacy manual model selector preferences
+    localStorage.removeItem('off1_selected_model');
+    localStorage.removeItem('selected_model');
+
     // Update Notification & Version Logic
-    const LATEST_VERSION = '2.0.0'; 
+    const LATEST_VERSION = '2.1.0'; 
     const storedVersion = localStorage.getItem('off1_version');
     const updateBanner = document.getElementById('update-banner');
     const versionDisplay = document.getElementById('platform-version');
@@ -1014,6 +1018,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 autoBadgeEl.classList.remove('auto-badge-pop');
                 void autoBadgeEl.offsetWidth;
                 autoBadgeEl.classList.add('auto-badge-pop');
+            }
+            const headerAutoBadgeEl = document.getElementById('header-auto-model-text');
+            if (headerAutoBadgeEl) {
+                headerAutoBadgeEl.textContent = autoBadgeText;
             }
             formData.append('model', autoResolvedModel);
             
@@ -3397,15 +3405,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Monitor Battery Status API to automatically prefer Eco Low-Battery LLMs when unplugged
+    function updateAutoEngineBadges(text) {
+        const badge = document.getElementById('auto-model-badge');
+        if (badge) {
+            badge.textContent = text;
+            badge.classList.remove('auto-badge-pop');
+            void badge.offsetWidth;
+            badge.classList.add('auto-badge-pop');
+        }
+        const headerBadge = document.getElementById('header-auto-model-text');
+        if (headerBadge) {
+            headerBadge.textContent = text;
+        }
+    }
+
     window._off1OnBattery = false;
     if (navigator.getBattery) {
         navigator.getBattery().then(batt => {
             const syncBatt = () => {
                 window._off1OnBattery = !batt.charging;
-                const badge = document.getElementById('auto-model-badge');
-                if (badge) {
-                    badge.textContent = window._off1OnBattery ? '🤖 Auto • 🔋 Battery Eco' : '🤖 Auto Engine';
-                }
+                updateAutoEngineBadges(window._off1OnBattery ? '🤖 Auto • 🔋 Battery Eco' : '🤖 Auto • ⚡ Eco Fast');
             };
             syncBatt();
             batt.addEventListener('chargingchange', syncBatt);
@@ -3469,26 +3488,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Live Auto-Engine Pill Preview while typing
-            const autoBadgeEl = document.getElementById('auto-model-badge');
-            if (autoBadgeEl) {
-                const lower = val.trim().toLowerCase();
-                let nextBadge = window._off1OnBattery ? '🤖 Auto • 🔋 Battery Eco' : '🤖 Auto • 🔋 Eco Instant';
-                if (!lower) {
-                    nextBadge = window._off1OnBattery ? '🤖 Auto • 🔋 Battery Eco' : '🤖 Auto Engine';
-                } else if (lower.startsWith('/image') || /\b(draw|generate an image|create an image|paint|picture of|photo of|illustration of)\b/i.test(lower)) {
-                    nextBadge = '🤖 Auto • 🎨 Image Gen';
-                } else if (!window._off1OnBattery && (lower.length > 220 || /\b(explain step by step|analyze and fix|architecture|algorithm|prove|derive|debug|comprehensive)\b/i.test(lower))) {
-                    nextBadge = '🤖 Auto • 💭 Thinking';
-                } else if (!window._off1OnBattery && (lower.length > 90 || /\b(write clean|code|function|class|script|sql|html|css|python|javascript)\b/i.test(lower))) {
-                    nextBadge = '🤖 Auto • ⚡ Fast';
-                }
-                if (nextBadge !== lastPreviewBadge) {
-                    lastPreviewBadge = nextBadge;
-                    autoBadgeEl.textContent = nextBadge;
-                    autoBadgeEl.classList.remove('auto-badge-pop');
-                    void autoBadgeEl.offsetWidth;
-                    autoBadgeEl.classList.add('auto-badge-pop');
-                }
+            const lower = val.trim().toLowerCase();
+            let nextBadge = window._off1OnBattery ? '🤖 Auto • 🔋 Battery Eco' : '🤖 Auto • ⚡ Eco Fast';
+            if (!lower) {
+                nextBadge = window._off1OnBattery ? '🤖 Auto • 🔋 Battery Eco' : '🤖 Auto • ⚡ Eco Fast';
+            } else if (lower.startsWith('/image') || /\b(draw|generate an image|create an image|paint|picture of|photo of|illustration of)\b/i.test(lower)) {
+                nextBadge = '🤖 Auto • 🎨 Image Gen';
+            } else if (!window._off1OnBattery && (lower.length > 220 || /\b(explain step by step|analyze and fix|architecture|algorithm|prove|derive|debug|comprehensive)\b/i.test(lower))) {
+                nextBadge = '🤖 Auto • 💭 Thinking';
+            } else if (!window._off1OnBattery && (lower.length > 90 || /\b(write clean|code|function|class|script|sql|html|css|python|javascript)\b/i.test(lower))) {
+                nextBadge = '🤖 Auto • ⚡ Fast';
+            }
+            if (nextBadge !== lastPreviewBadge) {
+                lastPreviewBadge = nextBadge;
+                updateAutoEngineBadges(nextBadge);
             }
         });
     }

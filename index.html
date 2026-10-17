@@ -16,7 +16,7 @@
     <link rel="manifest" href="manifest.json">
 
     <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.1.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -109,15 +109,23 @@
             </div>
 
             <div class="chat-header">
-                <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                    </svg>
-                </button>
-                <h2>AI Interface</h2>
-                <span class="status-indicator"></span>
+                <div style="display: flex; align-items: center; gap: 0.85rem;">
+                    <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h2>Off1 AI</h2>
+                    <span class="status-indicator" title="Connected to Off1 Core"></span>
+                </div>
+                
+                <!-- Prominent Auto Model Routing Pill in Header -->
+                <div id="header-auto-model-badge" class="header-auto-model-pill" title="Off1 Auto Model Routing: Intelligently routes between ultra-low-battery Eco models and deep reasoning engines based on battery state and query complexity. Manual model selection is disabled.">
+                    <span class="auto-model-dot"></span>
+                    <span id="header-auto-model-text">🤖 Auto: Eco Fast (Qwen 3 0.6B)</span>
+                </div>
             </div>
             
             <div id="pwned-warning-container" class="hidden"></div>
@@ -753,6 +761,6 @@
 
     <!-- Socket.IO client library for Pillar 2 bi-directional control WebSockets -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="main.js"></script>
+    <script src="main.js?v=2.1.0"></script>
 </body>
 </html>
