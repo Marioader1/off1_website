@@ -121,6 +121,10 @@
             </div>
             
             <div id="pwned-warning-container" class="hidden"></div>
+            <div id="battery-offline-warning-banner" class="battery-offline-banner hidden" role="status" aria-live="polite">
+                <i class="fas fa-battery-half"></i>
+                <span id="battery-offline-banner-text">Running on Battery Power in Offline Mode: Token speed limited to 1.5× human reading speed (~7.5 tk/s). Warning: Offline AI usage might increase battery consumption.</span>
+            </div>
             
             <div class="chat-history" id="chat-history">
                 <!-- Messages will be injected here -->
@@ -267,6 +271,14 @@
                             <option value="English">English</option>
                             <option value="Arabic">Arabic</option>
                         </select>
+                    </div>
+
+                    <div class="settings-row">
+                        <div class="settings-info">
+                            <h4>Force Offline Mode</h4>
+                            <p>Simulate offline/local mode (caps speed to 1.5× read speed on battery).</p>
+                        </div>
+                        <input type="checkbox" id="setting-force-offline" style="width: 20px; height: 20px; accent-color: #38bdf8; cursor: pointer;">
                     </div>
 
                     <div class="settings-row">
