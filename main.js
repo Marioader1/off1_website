@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.removeItem('selected_model');
 
     // Update Notification & Version Logic
-    const LATEST_VERSION = '2.1.0'; 
+    const LATEST_VERSION = '0.8.1'; 
     const storedVersion = localStorage.getItem('off1_version');
     const updateBanner = document.getElementById('update-banner');
     const versionDisplay = document.getElementById('platform-version');
