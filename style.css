@@ -2830,3 +2830,179 @@ body.light-mode {
     transform: scale(0.93);
 }
 
+/* =========================================================================
+   HOLOGRAPHIC OFF1 CORE ORB, AMBIENT AURORA & STAGGERED UI ENTRANCES
+   ========================================================================= */
+
+.ambient-aurora-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.aurora-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(85px);
+    opacity: 0.32;
+    will-change: transform;
+}
+
+.aurora-blob.blob-cyan {
+    width: 440px;
+    height: 440px;
+    top: -110px;
+    left: 15%;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.75) 0%, rgba(14, 165, 233, 0) 70%);
+    animation: auroraDriftCyan 14s ease-in-out infinite alternate;
+}
+
+.aurora-blob.blob-purple {
+    width: 500px;
+    height: 500px;
+    bottom: -140px;
+    right: 8%;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.7) 0%, rgba(139, 92, 246, 0) 70%);
+    animation: auroraDriftPurple 17s ease-in-out infinite alternate;
+}
+
+.aurora-blob.blob-emerald {
+    width: 380px;
+    height: 380px;
+    top: 40%;
+    left: 48%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.55) 0%, rgba(16, 185, 129, 0) 70%);
+    animation: auroraDriftEmerald 12s ease-in-out infinite alternate;
+}
+
+@keyframes auroraDriftCyan {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(80px, 55px) scale(1.18); }
+    100% { transform: translate(-45px, 95px) scale(0.92); }
+}
+
+@keyframes auroraDriftPurple {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-95px, -65px) scale(1.22); }
+    100% { transform: translate(50px, -110px) scale(0.94); }
+}
+
+@keyframes auroraDriftEmerald {
+    0% { transform: translate(-50%, -50%) scale(0.9); }
+    50% { transform: translate(-38%, -62%) scale(1.25); }
+    100% { transform: translate(-62%, -40%) scale(1.05); }
+}
+
+.app-container {
+    position: relative;
+    z-index: 1;
+}
+
+/* 3D Counter-Rotating Holographic Off1 Core Orb */
+.off1-core-orb {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.off1-core-orb .orb-ring {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.off1-core-orb .orb-ring-outer {
+    inset: 0;
+    border: 2px solid transparent;
+    border-top-color: #38bdf8;
+    border-right-color: rgba(168, 85, 247, 0.8);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.55);
+    animation: orbSpinCW 2.6s linear infinite;
+}
+
+.off1-core-orb .orb-ring-inner {
+    inset: 5px;
+    border: 2px dashed transparent;
+    border-bottom-color: #34d399;
+    border-left-color: #c084fc;
+    animation: orbSpinCCW 1.9s linear infinite;
+}
+
+.off1-core-orb .orb-nucleus {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffff 0%, #38bdf8 55%, #a855f7 100%);
+    box-shadow: 0 0 14px #38bdf8, 0 0 24px #a855f7;
+    animation: orbNucleusPulse 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes orbSpinCW {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes orbSpinCCW {
+    0% { transform: rotate(360deg); }
+    100% { transform: rotate(0deg); }
+}
+
+@keyframes orbNucleusPulse {
+    0% { transform: scale(0.82); filter: brightness(0.95); }
+    100% { transform: scale(1.24); filter: brightness(1.35); }
+}
+
+/* Flowing Gradient Shimmer Title */
+.animated-title-gradient {
+    background: linear-gradient(90deg, #f8fafc 0%, #38bdf8 30%, #c084fc 60%, #34d399 85%, #f8fafc 100%);
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: titleGradientSweep 4.5s linear infinite;
+}
+
+@keyframes titleGradientSweep {
+    0% { background-position: 0% center; }
+    100% { background-position: 220% center; }
+}
+
+/* Staggered Entrance Cascade for Sidebar & Prompt Chips */
+@keyframes slideUpFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(14px) scale(0.97);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.sidebar .nav-menu .nav-item {
+    animation: slideUpFadeIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.sidebar .nav-menu .nav-item:nth-child(1) { animation-delay: 0.05s; }
+.sidebar .nav-menu .nav-item:nth-child(2) { animation-delay: 0.10s; }
+.sidebar .nav-menu .nav-item:nth-child(3) { animation-delay: 0.15s; }
+.sidebar .nav-menu .nav-item:nth-child(4) { animation-delay: 0.20s; }
+.sidebar .nav-menu .nav-item:nth-child(5) { animation-delay: 0.25s; }
+.sidebar .nav-menu .nav-item:nth-child(6) { animation-delay: 0.30s; }
+
+.quick-prompts-bar .quick-prompt-chip {
+    animation: slideUpFadeIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.quick-prompts-bar .quick-prompt-chip:nth-child(1) { animation-delay: 0.08s; }
+.quick-prompts-bar .quick-prompt-chip:nth-child(2) { animation-delay: 0.14s; }
+.quick-prompts-bar .quick-prompt-chip:nth-child(3) { animation-delay: 0.20s; }
+.quick-prompts-bar .quick-prompt-chip:nth-child(4) { animation-delay: 0.26s; }
+.quick-prompts-bar .quick-prompt-chip:nth-child(5) { animation-delay: 0.32s; }
+.quick-prompts-bar .quick-prompt-chip:nth-child(6) { animation-delay: 0.38s; }
+
+
