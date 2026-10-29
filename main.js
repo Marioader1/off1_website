@@ -598,7 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
         desktopToggleBtn.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
             // Save state
-            localStorage.setItem('off1_sidebar_collapsed', sidebar.classList.contains('collapsed'));
+            localStorage.setItem('off1_sidebar_collapsed', sidebar.classList.contains('collapsed')); document.body.classList.toggle('sidebar-is-collapsed', sidebar.classList.contains('collapsed'));
         });
 
         // Restore state
@@ -1803,7 +1803,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         btnAdmin.addEventListener('click', () => {
-            adminModal.classList.remove('hidden');
+            if (settingsModal) settingsModal.classList.add('hidden'); if (historyModal) historyModal.classList.add('hidden'); adminModal.classList.remove('hidden');
             fetchAdminStats(); // Fetch on open
         });
 
@@ -1950,7 +1950,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         btnSettings.addEventListener('click', async () => {
-            settingsModal.classList.remove('hidden');
+            if (adminModal) adminModal.classList.add('hidden'); if (historyModal) historyModal.classList.add('hidden'); settingsModal.classList.remove('hidden');
             pwChangeContainer.classList.add('hidden'); // Hide password form by default
             
             try {
@@ -2237,7 +2237,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnHistory.addEventListener('click', async () => {
             await fetchAllHistory();
             renderHistoryModal();
-            historyModal.classList.remove('hidden');
+            if (adminModal) adminModal.classList.add('hidden'); if (settingsModal) settingsModal.classList.add('hidden'); historyModal.classList.remove('hidden');
         });
 
         closeHistoryBtn.addEventListener('click', () => {
@@ -3339,7 +3339,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (btnNewChat) {
-        btnNewChat.addEventListener('click', startNewChatSession);
+        btnNewChat.addEventListener('click', startNewChatSession); const btnSessionView = document.getElementById('btn-session'); if (btnSessionView) btnSessionView.addEventListener('click', () => { if (adminModal) adminModal.classList.add('hidden'); if (settingsModal) settingsModal.classList.add('hidden'); if (historyModal) historyModal.classList.add('hidden'); });
     }
 
     if (sidebarSearchInput) {

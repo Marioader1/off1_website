@@ -249,7 +249,7 @@
         <div class="modal-content">
             <div class="settings-header">
                 <i class="fas fa-cog"></i>
-                <h2 class="glow-text" style="margin:0;">Settings <span class="secret-clue" data-clue-pos="3" style="font-size:0.55rem; opacity:0.2; cursor:pointer;" title="Clue 3/5: Letter [3] of cipher">I</span></h2>
+                <button type="button" id="top-back-settings-btn" class="btn btn-secondary" onclick="document.getElementById('close-settings-btn').click()" style="display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.35rem 0.85rem; font-size: 0.85rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; border-radius: 6px; cursor: pointer; margin-right: 0.5rem;"><i class="fas fa-arrow-left"></i> <span>Back to Chat</span></button><h2 class="glow-text" style="margin:0;">Settings Dashboard <span class="secret-clue" data-clue-pos="3" style="font-size:0.55rem; opacity:0.2; cursor:pointer;" title="Clue 3/5: Letter [3] of cipher">I</span></h2>
             </div>
 
             
@@ -356,7 +356,7 @@
 
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                     <button type="submit" class="btn btn-primary" style="flex: 2;">Save Changes</button>
-                    <button type="button" id="close-settings-btn" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+                    <button type="button" id="close-settings-btn" class="btn btn-secondary" style="flex: 1;">← Back to Chat</button>
                 </div>
             </form>
         </div>
@@ -365,7 +365,7 @@
     <div id="admin-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
         <div class="modal-content glass-panel" style="max-width: 1200px; text-align: left;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <h2 class="glow-text" style="color: #fbbf24; margin: 0;">Admin Dashboard</h2>
+                <button type="button" id="top-back-admin-btn" class="btn btn-secondary" onclick="document.getElementById('close-admin-btn').click()" style="display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.35rem 0.85rem; font-size: 0.85rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; border-radius: 6px; cursor: pointer;"><i class="fas fa-arrow-left"></i> <span>Back to Chat</span></button><h2 class="glow-text" style="color: #fbbf24; margin: 0;">🛡️ Admin Dashboard</h2>
                 <button id="btn-refresh-admin" class="btn btn-secondary" title="Refresh Dashboard Stats" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; font-size: 0.85rem; border-color: rgba(251, 191, 36, 0.4); color: #fbbf24; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">
                     <i class="fas fa-sync-alt" id="admin-refresh-icon"></i>
                     <span>Refresh</span>
@@ -569,7 +569,7 @@
             </div>
 
             <div style="margin-top: 2rem; display: flex; gap: 1rem;">
-                <button id="close-admin-btn" class="btn btn-secondary" style="width: 100%;">Close Panel</button>
+                <button id="close-admin-btn" class="btn btn-secondary" style="width: 100%;">← Return to Chat</button>
             </div>
         </div>
     </div>
