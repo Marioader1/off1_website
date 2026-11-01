@@ -155,7 +155,10 @@
             </div>
             <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 1rem;">
                 <button class="nav-item logout-btn text-danger w-100" id="logout-btn"><span>Logout</span></button>
-                <div class="version-label" id="btn-changelog" style="cursor: pointer; text-decoration: underline;" title="View Changelog">v<span id="platform-version">0.8.1</span> <span class="secret-clue" data-clue-pos="5" style="font-size:0.5rem; opacity:0.15; cursor:pointer;" title="Clue 5/5: Letter [5] of cipher">T</span></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 0.4rem;">
+                    <div class="version-label" id="btn-changelog" style="cursor: pointer; text-decoration: underline;" title="View Changelog">v<span id="platform-version">0.8.1</span> <span class="secret-clue" data-clue-pos="5" style="font-size:0.5rem; opacity:0.15; cursor:pointer;" title="Clue 5/5: Letter [5] of cipher">T</span></div>
+                    <button type="button" id="btn-open-legal" style="background: transparent; border: none; color: var(--text-secondary); font-size: 0.75rem; text-decoration: underline; cursor: pointer;" onclick="document.getElementById('privacy-modal').classList.remove('hidden')">⚖️ Legal &amp; Terms</button>
+                </div>
             </div>
 
         </aside>
@@ -281,6 +284,9 @@
                         </svg>
                     </button>
                 </form>
+                <div class="ai-legal-disclaimer-bar" style="text-align: center; font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.45rem; opacity: 0.88; line-height: 1.35;">
+                    ⚠️ <strong>AI Disclaimer:</strong> Off1 uses generative AI and may produce inaccurate or incomplete outputs ("hallucinations"). Not medical, legal, financial, or emergency advice. Verify critical info independently. <a href="#" onclick="document.getElementById('privacy-modal').classList.remove('hidden'); return false;" style="color: #38bdf8; text-decoration: underline;">Terms, Privacy &amp; Liability</a>
+                </div>
             </div>
         </main>
     </div>
@@ -671,21 +677,21 @@
         </div>
     </div>
 
-    <!-- Privacy Policy Modal (v0.8.1) -->
+    <!-- Legal, Terms of Service, AI Liability Disclaimer & Privacy Policy Modal (v0.8.1) -->
     <div id="privacy-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" style="z-index: 9999;">
-        <div class="modal-content glass-panel" style="max-width: 500px; text-align: left;">
-            <h2 id="privacy-title" style="margin-bottom: 1rem; color: var(--text-main);">Privacy & Data Usage Policy <span class="secret-clue" data-clue-pos="4" style="font-size:0.55rem; opacity:0.2; cursor:pointer;" title="Clue 4/5: Letter [4] of cipher">F</span></h2>
+        <div class="modal-content glass-panel" style="max-width: 650px; max-height: 86vh; overflow-y: auto; text-align: left;">
+            <h2 id="privacy-title" style="margin-bottom: 0.75rem; color: var(--text-main);">⚖️ Terms of Service, AI Disclaimer &amp; Privacy Policy <span class="secret-clue" data-clue-pos="4" style="font-size:0.55rem; opacity:0.2; cursor:pointer;" title="Clue 4/5: Letter [4] of cipher">F</span></h2>
 
-            <div style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem;">
-                <ol style="padding-left: 1.2rem;">
-                    <li style="margin-bottom: 0.5rem;"><strong>Local & Secure:</strong> Your data is yours. We only store the chat history and preferences necessary to make the app work for you.</li>
-                    <li style="margin-bottom: 0.5rem;"><strong>No Selling Data:</strong> We do not and will never sell your personal data or conversations to third parties.</li>
-                    <li style="margin-bottom: 0.5rem;"><strong>Device Access:</strong> Features like Voice and File Upload only access your microphone and files when you explicitly click them.</li>
-                    <li style="margin-bottom: 0.5rem;"><strong>Guest Mode:</strong> Using Guest Mode means your chat vanishes when you leave. No history is synced.</li>
-                </ol>
+            <div style="color: var(--text-secondary); font-size: 0.86rem; line-height: 1.55; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem;">
+                <div><strong>1. Generative AI Accuracy &amp; Hallucination Disclaimer:</strong> Off1 is an experimental artificial intelligence system powered by large language and image models (including third-party open-weight models such as Google Gemma, Alibaba Qwen, and Stable Diffusion). Outputs are generated probabilistically and <strong>may contain factual errors, fabricated citations, biased statements, or defective code ("hallucinations")</strong>. Always verify any output independently before relying on it.</div>
+                <div><strong>2. No Professional Advice (Medical, Legal, Financial, Safety):</strong> Nothing generated by Off1 constitutes professional medical, clinical, legal, financial, tax, investment, engineering, or emergency advice, nor does use of Off1 create any professional-client or fiduciary relationship. Never disregard or delay seeking qualified professional advice or emergency services because of something generated by Off1.</div>
+                <div><strong>3. "AS-IS" Warranty Disclaimer &amp; Limitation of Liability:</strong> To the maximum extent permitted by applicable law, Off1 and its creators provide the software, website, desktop app, mobile app, and local/cloud inference services strictly <strong>"AS IS" and "AS AVAILABLE"</strong> without warranties of any kind (express or implied). In no event shall Off1 or its developers be liable for any direct, indirect, incidental, consequential, exemplary, or special damages (including data loss, code execution side effects, hardware/thermal/battery wear, or reliance on AI outputs).</div>
+                <div><strong>4. Code Execution, Third-Party Store Prices &amp; Assumption of Risk:</strong> Any code snippets, scripts, or commands generated by Off1 or run in the sandbox are executed at your own sole risk. Any product or store pricing information shown by search features is provided for informational comparison only without guarantee of accuracy or availability.</div>
+                <div><strong>5. Acceptable Use, Age Requirement (13+) &amp; Indemnification:</strong> You must be at least 13 years old (or the minimum age of digital consent in your jurisdiction, or have verifiable parental consent) to use Off1. You agree not to submit unlawful, harmful, infringing, or confidential third-party data, and you agree to indemnify and hold harmless Off1 and its developers from any claims arising from your prompts, uploads, or misuse of the service.</div>
+                <div><strong>6. Privacy, Security &amp; Data Rights (GDPR/CCPA):</strong> We do not sell your personal data. Account credentials, anti-abuse security logs (including Vanguard Defense Matrix IP/strike records), and synced chats are processed solely to provide and protect the service. Voice and file uploads only activate when explicitly triggered by you. You may export your chats or permanently delete your account and associated server data at any time via <strong>Settings &rarr; Danger Zone</strong>.</div>
             </div>
-            <div class="modal-actions" style="display: flex; justify-content: flex-end;">
-                <button class="btn btn-primary" id="btn-accept-privacy">I Understand & Accept</button>
+            <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button class="btn btn-primary" id="btn-accept-privacy">I Understand &amp; Agree to Terms</button>
             </div>
         </div>
     </div>
